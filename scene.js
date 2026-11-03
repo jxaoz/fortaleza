@@ -280,6 +280,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   const last=road.at(-1);
   centerline.lineTo(last.x,last.z);
+  centerline.lineTo(last.x+.8,last.z);
   const points=centerline.getPoints(10);
   function pave(section,color=0x89869a,flat=false){
     const edge=side=>section.map((point,i)=>{
@@ -298,8 +299,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     if(flat) roadway.material.side=T.DoubleSide;
   }
   const leftJoin=bankLeft-rampLength,rightJoin=bankRight+rampLength;
-  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)],0x84674f,true);
-  pave([new T.Vector2(rightJoin,bridgeZ),...points.filter(point=>point.x>rightJoin)]);
+  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin+.25,bridgeZ)],0x84674f,true);
+  pave([new T.Vector2(rightJoin-.25,bridgeZ),...points.filter(point=>point.x>rightJoin)]);
 
   const segments=[[leftJoin,bankLeft,0,rise],[bankLeft,bankRight,rise,rise],
     [bankRight,rightJoin,rise,0]];
@@ -415,6 +416,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     mesh(scene,box,0xff3b63,gate.x-1.75,1.45,z,.12,.85,.26,true);
   }
   mesh(scene,box,0x454861,gate.x+1,4.25,gate.z,3.3,1.4,5);
+  mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
   mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
   mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
   const bloodLight=new T.PointLight(0xff2458,58,11);
