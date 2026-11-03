@@ -12,6 +12,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   camera.position.set(3, 66, 65);
   camera.lookAt(0, 0, 0);
 
+  const focus = new T.Vector3();
   const orbit = new T.Spherical().setFromVector3(camera.position);
   let drag = null;
   canvas.addEventListener('contextmenu', event => event.preventDefault());
@@ -29,8 +30,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
     orbit.theta -= (event.clientX - drag.x) * .008;
     drag.x = event.clientX;
-    camera.position.setFromSpherical(orbit);
-    camera.lookAt(0, 0, 0);
+    camera.position.setFromSpherical(orbit).add(focus);
+    camera.lookAt(focus);
   });
   canvas.addEventListener('lostpointercapture', event => {
     if (drag?.id !== event.pointerId) return;
@@ -39,9 +40,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   });
 
   function zoomBy(factor) {
-    camera.zoom = T.MathUtils.clamp(camera.zoom * factor, .75, 2.25);
+    camera.zoom = T.MathUtils.clamp(camera.zoom * factor, .75, 5);
     camera.updateProjectionMatrix();
-    zoomIn.disabled = camera.zoom >= 2.25;
+    zoomIn.disabled = camera.zoom >= 5;
     zoomOut.disabled = camera.zoom <= .75;
   }
   zoomIn.onclick = () => zoomBy(1.15);
@@ -139,7 +140,44 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   });
   const pickTargets=spots.map(spot=>spot.userData.disc);
   const pointer=new T.Vector2(), ray=new T.Raycaster();
+  let pan;
+  let ignoreClick=false;
+  const right=new T.Vector3();
+  const forward=new T.Vector3();
+  canvas.addEventListener('pointerdown', event=>{
+    if(event.pointerType!=='mouse'||event.button!==0||drag) return;
+    ignoreClick=false;
+    pan={id:event.pointerId,x:event.clientX,y:event.clientY,moving:false};
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', event=>{
+    if(pan?.id!==event.pointerId||!(event.buttons&1)) return;
+    const dx=event.clientX-pan.x,dy=event.clientY-pan.y;
+    if(!pan.moving&&Math.hypot(dx,dy)<5) return;
+    pan.moving=true;
+    ignoreClick=true;
+    pan.x=event.clientX;
+    pan.y=event.clientY;
+    canvas.style.cursor='grabbing';
+    right.setFromMatrixColumn(camera.matrixWorld,0).setY(0).normalize();
+    forward.crossVectors(right,camera.up).normalize();
+    const units=2*orbit.radius*Math.tan(T.MathUtils.degToRad(camera.fov/2))/(canvas.clientHeight*camera.zoom);
+    focus.addScaledVector(right,-dx*units).addScaledVector(forward,-dy*units/Math.cos(orbit.phi));
+    focus.x=T.MathUtils.clamp(focus.x,-42,42);
+    focus.z=T.MathUtils.clamp(focus.z,-20,20);
+    camera.position.setFromSpherical(orbit).add(focus);
+    camera.lookAt(focus);
+  });
+  canvas.addEventListener('lostpointercapture', event=>{
+    if(pan?.id!==event.pointerId) return;
+    pan=null;
+    if(!drag)canvas.style.cursor='';
+  });
   canvas.onclick=event=>{
+    if(ignoreClick){
+      ignoreClick=false;
+      return;
+    }
     const r=canvas.getBoundingClientRect();
     pointer.set((event.clientX-r.left)/r.width*2-1,1-(event.clientY-r.top)/r.height*2);
     ray.setFromCamera(pointer,camera);
