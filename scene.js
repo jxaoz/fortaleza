@@ -270,7 +270,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   const road = path.map(([x,y])=>pos(x,y));
   const centerline=new T.Path();
-  centerline.moveTo(road[0].x,road[0].z);
+  centerline.moveTo(road[0].x-1.8,road[0].z);
+  centerline.lineTo(road[0].x,road[0].z);
   for(let i=1;i<road.length-1;i++){
     const corner=road[i];
     const entry=corner.clone().lerp(road[i-1],2.1/corner.distanceTo(road[i-1]));
@@ -343,7 +344,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const portal=new T.Group();
   portal.position.set(entrance.x-.85,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
-  portal.scale.set(2.25,1.62,1);
+  portal.scale.set(2.12,1.62,1);
   portal.position.y=1.53;
   scene.add(portal);
   const vortex=new T.ShaderMaterial({
