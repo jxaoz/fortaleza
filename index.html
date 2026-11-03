@@ -10,7 +10,7 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .bottom{align-items:flex-end}
 .panel{background:linear-gradient(145deg,#252739f5,#100e19f5);border:1px solid #76604f;box-shadow:inset 0 0 0 3px #090a1280,0 5px 20px #0007;border-radius:5px;padding:10px 14px}
 .brand{border-left:3px solid #cf536f}
-h1{margin:2px 0 0;font:clamp(21px,3vw,42px) Georgia,serif}
+h1{margin:2px 0 0} .brand svg{display:block;width:clamp(120px,24vw,240px);height:auto}
 small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10px;letter-spacing:.16em}
 #hud{display:flex;gap:clamp(8px,2vw,26px);text-align:center}
 .stat{display:grid;gap:3px;min-width:45px}
@@ -62,7 +62,7 @@ button[aria-pressed=true],#go{
   <canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta" title="Arraste com o botão esquerdo para mover e com o direito para girar. Use a roda para aproximar."></canvas>
   <div class="overlay">
     <div class="top">
-      <header class="brand panel"><small>A Ponte da Cripta</small><h1>Fortaleza Rubra</h1></header>
+      <header class="brand panel"><small>A Ponte da Cripta</small><h1><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 88" role="img" aria-label="Fortaleza Rubra"><path d="M8 7h65v40c0 15-12 26-32.5 35C20 73 8 62 8 47Z" fill="#191b2a" stroke="#ac8473" stroke-width="2"/><path d="M24 55V25h7v6h6v-6h7v6h6v-6h7v30H46V44H35v11Z" fill="#e7dac6"/><path d="M41 57c-3 4-6 7-6 11a6 6 0 0 0 12 0c0-4-3-7-6-11Z" fill="#d24d66"/><path d="M88 54h238" stroke="#865062"/><text x="88" y="45" fill="#f3e4cf" font-family="Georgia,serif" font-size="31" font-weight="bold" letter-spacing="2">FORTALEZA</text><text x="88" y="77" fill="#ed7587" font-family="Georgia,serif" font-size="24" font-weight="bold" letter-spacing="8">RUBRA</text></svg></h1></header>
       <div id="hud" class="panel" aria-label="Estado da partida">
         <div class="stat"><span class="label">Sangue</span><strong id="blood"></strong></div>
         <div class="stat"><span class="label">Cripta</span><strong id="health"></strong></div>

@@ -241,6 +241,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
   for(let i=0;i<44;i++){
     const x=(i*137%810)-405, z=i%2 ? -15-(i%3) : 14+(i%4);
+    if(Math.abs(x/10-riverX)<3.4) continue;
     const h=2.8+(i*7%5)*.7;
     mesh(scene,cylinder,0x514641,x/10,.55,z,.18,1.1,.18);
     mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2+.55,z,1.1,h,1.2);
