@@ -431,6 +431,37 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
   mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
   mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
+  const towerOutline=new T.Shape([
+    [-1.4,-.93],[-.93,-1.4],[.93,-1.4],[1.4,-.93],
+    [1.4,.93],[.93,1.4],[-.93,1.4],[-1.4,.93]
+  ].map(([x,z])=>new T.Vector2(x,z)));
+  const towerGeometry=new T.ExtrudeGeometry(towerOutline,{depth:10,bevelEnabled:false});
+  towerGeometry.rotateX(-Math.PI/2);
+  const towerUv=towerGeometry.attributes.uv;
+  for(let i=0;i<towerUv.count;i++){
+    towerUv.setXY(i,towerUv.getX(i)/3,towerUv.getY(i)/3);
+  }
+  const windowArch=new T.Shape();
+  windowArch.moveTo(-.44,0);
+  windowArch.lineTo(.44,0);
+  windowArch.lineTo(.44,.91);
+  windowArch.quadraticCurveTo(.44,1.36,0,1.72);
+  windowArch.quadraticCurveTo(-.44,1.36,-.44,.91);
+  windowArch.closePath();
+  const windowGeometry=new T.ShapeGeometry(windowArch);
+  function victorianWindow(x,y,z,rotation){
+    const frame=new T.Group();
+    frame.position.set(x,y,z);
+    frame.rotation.y=rotation;
+    scene.add(frame);
+    mesh(frame,windowGeometry,0x9b8590,0,0,0,1,1,1);
+    mesh(frame,windowGeometry,0x68213e,0,.1,.025,.76,.85,1,true);
+    mesh(frame,box,0x302239,0,.67,.052,.04,1.16,.045);
+    mesh(frame,box,0x302239,0,.73,.052,.66,.045,.045);
+    const tracery=mesh(frame,box,0xc08293,0,1.15,.061,.13,.13,.035);
+    tracery.rotation.z=Math.PI/4;
+    mesh(frame,box,0x58627b,0,-.045,.03,1.04,.12,.23);
+  }
   const keepX=gate.x+8.2;
   mesh(scene,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
   mesh(scene,box,0x58627b,keepX,8.15,gate.z,8.9,.45,9.3);
@@ -441,7 +472,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
     for(const x of [gate.x+4.4,gate.x+11.9]){
       const z=gate.z+side*5.1;
-      mesh(scene,box,0x68758d,x,4.95,z,2.8,10,2.8);
+      mesh(scene,towerGeometry,0x68758d,x,-.05,z,1,1,1);
       mesh(scene,box,0x58627b,x,9.9,z,3.15,.5,3.15);
       for(const dx of [-1.1,0,1.1]){
         for(const dz of [-1.1,0,1.1]){
@@ -455,9 +486,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
     for(const x of [keepX-1.9,keepX,keepX+1.9]){
       const z=gate.z+side*4.42;
-      mesh(scene,box,0x454861,x,5.6,z,.65,1.5,.14);
-      mesh(scene,box,0x351a29,x,5.65,z+side*.08,.29,1.18,.08);
+      victorianWindow(x,4.85,z,side===1?0:Math.PI);
     }
+  }
+  for(const offset of [-1.65,0,1.65]){
+    victorianWindow(keepX-4.23,5.85,gate.z+offset,-Math.PI/2);
   }
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
