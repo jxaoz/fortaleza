@@ -16,14 +16,36 @@ small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10
 .stat{display:grid;gap:3px;min-width:45px}
 .stat strong{font: bold clamp(16px,2vw,24px) Georgia,serif;color:#ffe4d9}
 .stat:first-child strong{color:#ff9aad}
-button{font:inherit;color:#f8eee3;background:linear-gradient(#343247,#201c2a);border:1px solid #6e5c57;border-radius:4px;min-height:36px;padding:6px 10px;cursor:pointer}
+button{
+  font:inherit;color:#fff3ea;min-height:36px;padding:6px 10px;cursor:pointer;
+  border:1px solid #897575;border-radius:4px;
+  background-color:#33303a;
+  background-image:var(--stone-grain),
+    linear-gradient(151deg,transparent 29%,#281c24 30%,#67404a 31%,transparent 33%),
+    linear-gradient(24deg,transparent 63%,#211c26 64%,#826c73 65%,transparent 67%),
+    linear-gradient(160deg,#59515a,#35313b 48%,#201e29);
+  box-shadow:inset 0 1px #d8bcc544,inset 0 -3px #110e17aa,0 2px 4px #0008;
+  text-shadow:0 1px 2px #110a13;
+}
+:root{
+  --stone-grain:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.52' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='.19'/%3E%3C/svg%3E");
+}
 button:hover:not(:disabled){border-color:#ffb1a9;filter:brightness(1.2)}
 button:focus-visible{outline:2px solid #ffcf98;outline-offset:2px}
 button:disabled{opacity:.48;cursor:default}
-button[aria-pressed=true],#go{background:linear-gradient(#8e2a47,#4d162a);border-color:#d77985}
+button[aria-pressed=true],#go{
+  background-color:#702034;
+  background-image:var(--stone-grain),
+    linear-gradient(153deg,transparent 37%,#441020 38%,#e56478 39%,transparent 41%),
+    radial-gradient(ellipse at 26% 100%,#b53651,transparent 68%),
+    linear-gradient(155deg,#69424a,#542033 55%,#2f1825);
+  border-color:#d48089;
+  box-shadow:inset 0 1px #ffb8ad77,inset 0 -3px #2c0c17aa,0 0 8px #8f233c80;
+}
 #shop,.zoom,.actions{display:flex;gap:5px}
 #shop{margin:5px 0 7px}
 #shop button{display:grid;text-align:left;gap:2px;flex:1}
+#shop button small::before{content:"";display:inline-block;width:6px;height:8px;margin-right:5px;border-radius:65% 0 65% 65%;transform:rotate(-45deg);background:linear-gradient(#ff8a9d,#a81b3c);vertical-align:-1px}
 #shop button small{letter-spacing:.02em;text-transform:none;color:#ffc1b1}
 .controls{display:grid;justify-items:end;gap:6px}
 .zoom button{min-width:36px;font-size:20px;padding:0 7px}
