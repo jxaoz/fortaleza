@@ -7,7 +7,43 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
-  scene.background = new T.Color(0x344767);
+  const sky=document.createElement('canvas');
+  sky.width=768;
+  sky.height=512;
+  const skyPaint=sky.getContext('2d');
+  const night=skyPaint.createLinearGradient(0,0,0,sky.height);
+  night.addColorStop(0,'#080c1c');
+  night.addColorStop(.57,'#202c48');
+  night.addColorStop(1,'#151e33');
+  skyPaint.fillStyle=night;
+  skyPaint.fillRect(0,0,sky.width,sky.height);
+
+  let seed=142;
+  const random=()=>{
+    seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+    return seed/4294967296;
+  };
+  for(let i=0;i<95;i++){
+    skyPaint.fillStyle='rgba(195,212,249,'+(.12+random()*.4)+')';
+    skyPaint.fillRect(random()*sky.width,random()*190,1,1);
+  }
+  for(let i=0;i<105;i++){
+    const x=random()*sky.width,y=140+random()*390;
+    const width=65+random()*230,height=10+random()*38;
+    skyPaint.save();
+    skyPaint.translate(x,y);
+    skyPaint.scale(width,height);
+    const mist=skyPaint.createRadialGradient(0,0,0,0,0,1);
+    mist.addColorStop(0,'rgba(127,150,193,'+(.035+random()*.095)+')');
+    mist.addColorStop(.5,'rgba(106,132,178,.035)');
+    mist.addColorStop(1,'rgba(106,132,178,0)');
+    skyPaint.fillStyle=mist;
+    skyPaint.fillRect(-1,-1,2,2);
+    skyPaint.restore();
+  }
+  const skyTexture=new T.CanvasTexture(sky);
+  skyTexture.colorSpace=T.SRGBColorSpace;
+  scene.background=skyTexture;
   scene.fog = new T.FogExp2(0x344767, .008);
   const camera = new T.PerspectiveCamera(38, 900/430, .1, 250);
   camera.position.set(3, 66, 65);
