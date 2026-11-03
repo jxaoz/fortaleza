@@ -144,7 +144,37 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   });
   const paving=masonry(5,5);
-  const stone=masonry(5,3);
+  const stone=pattern('#41434b',.28,(ctx,random)=>{
+    const w=128/3,h=128/5;
+    for(let row=0;row<5;row++){
+      for(let col=-1;col<3;col++){
+        const x=(col+(row%2)*.5)*w,y=row*h;
+        const shade=49+random()*23;
+        const face=ctx.createLinearGradient(x,y,x+w,y+h);
+        face.addColorStop(0,'hsl(224 9% '+(shade+12)+'%)');
+        face.addColorStop(.3,'hsl(224 9% '+shade+'%)');
+        face.addColorStop(1,'hsl(224 9% '+(shade-10)+'%)');
+        ctx.fillStyle=face;
+        ctx.beginPath();
+        ctx.moveTo(x+1,y+4);
+        ctx.lineTo(x+5,y+1);
+        ctx.lineTo(x+w-4,y+1);
+        ctx.lineTo(x+w-1,y+4);
+        ctx.lineTo(x+w-1,y+h-4);
+        ctx.lineTo(x+w-5,y+h-1);
+        ctx.lineTo(x+3,y+h-2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.save();
+        ctx.clip();
+        for(let i=0;i<70;i++){
+          ctx.fillStyle=random()<.5?'#11131a33':'#e1e3e326';
+          ctx.fillRect(x+random()*w,y+random()*h,1+random()*5,1+random()*2);
+        }
+        ctx.restore();
+      }
+    }
+  });
   const needles=pattern('#939d91',.24,(ctx,random)=>{
     ctx.strokeStyle='#606f61';
     ctx.beginPath();
@@ -241,7 +271,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, bumpMap:map===stone ? stone : null, bumpScale:.055, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
     let geometry=shape;
     if(tileSize && shape===box){
@@ -467,12 +497,40 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const bounds=new T.Box3().setFromObject(model);
     const size=bounds.getSize(new T.Vector3());
     const center=bounds.getCenter(new T.Vector3());
-    const scale=17/size.y;
+    const scale=19/size.y;
     if(!Number.isFinite(scale)||scale<=0) return;
     const centralTower=new T.Group();
     centralTower.scale.setScalar(scale);
     centralTower.position.set(keepX-center.x*scale,-.05-bounds.min.y*scale,gate.z-center.z*scale);
     centralTower.add(model);
+    centralTower.updateMatrixWorld(true);
+    const stoneMaterial=new T.MeshStandardMaterial({
+      color:0x68758d,map:stone,bumpMap:stone,bumpScale:.055,roughness:.95
+    });
+    const point=new T.Vector3(), normal=new T.Vector3();
+    model.traverse(part=>{
+      if(!part.isMesh) return;
+      const geometry=part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
+      const positions=geometry.attributes.position;
+      const uv=new Float32Array(positions.count*2);
+      const a=new T.Vector3(), b=new T.Vector3(), c=new T.Vector3();
+      for(let i=0;i<positions.count;i+=3){
+        a.fromBufferAttribute(positions,i).applyMatrix4(part.matrixWorld);
+        b.fromBufferAttribute(positions,i+1).applyMatrix4(part.matrixWorld).sub(a);
+        c.fromBufferAttribute(positions,i+2).applyMatrix4(part.matrixWorld).sub(a);
+        normal.crossVectors(b,c);
+        const top=Math.abs(normal.y)>=Math.max(Math.abs(normal.x),Math.abs(normal.z));
+        const side=Math.abs(normal.x)>Math.abs(normal.z);
+        for(let j=i;j<i+3;j++){
+          point.fromBufferAttribute(positions,j).applyMatrix4(part.matrixWorld);
+          uv[j*2]=(top||!side?point.x:point.z)/3;
+          uv[j*2+1]=(top?point.z:point.y)/3;
+        }
+      }
+      geometry.setAttribute('uv',new T.BufferAttribute(uv,2));
+      part.geometry=geometry;
+      part.material=stoneMaterial;
+    });
     scene.add(centralTower);
   },undefined,error=>console.warn('Falha ao carregar a torre central.',error));
   mesh(scene,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
