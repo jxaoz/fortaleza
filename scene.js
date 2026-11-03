@@ -171,7 +171,27 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       ctx.fillRect(random()*128,random()*128,1+random()*2,5+random()*24);
     }
   });
+  const caveStone=pattern('#777581',.24,(ctx,random)=>{
+    for(let i=0;i<9;i++){
+      let x=random()*128,y=random()*128;
+      ctx.beginPath();
+      ctx.moveTo(x,y);
+      for(let j=0;j<5;j++){
+        x+=(random()-.5)*25;
+        y+=5+random()*12;
+        ctx.lineTo(x,y);
+      }
+      ctx.strokeStyle='#a09ba5';
+      ctx.lineWidth=3;
+      ctx.stroke();
+      ctx.strokeStyle='#302b38';
+      ctx.lineWidth=1.7;
+      ctx.stroke();
+    }
+  });
   const surfaces=new Map([
+    [0x51596b,[caveStone]], [0x41495a,[caveStone]],
+    [0x586174,[caveStone]], [0x454d60,[caveStone]],
     [0x927452,[wood,2]], [0x427b94,[current,3]],
     [0x46546a,[soil,3]], [0x89869a,[paving,3]], [0x68758d,[stone,3]],
     [0x58627b,[stone,3]], [0x454861,[stone,3]], [0x343a50,[stone,3]],
