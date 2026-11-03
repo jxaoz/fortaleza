@@ -140,7 +140,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         sniperModel = undefined;
         return;
       }
-      fitted.add(new T.Mesh(merged, material));
+      // The texture uses cutouts. Blending the merged triangles can hide nearer surfaces.
+      const cutout = material.clone();
+      cutout.transparent = false;
+      cutout.depthWrite = true;
+      cutout.alphaTest = .1;
+      fitted.add(new T.Mesh(merged, cutout));
     }
     fitted.scale.setScalar(scale);
     fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
