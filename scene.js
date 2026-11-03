@@ -161,6 +161,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         if(customModel){
           const figure=customModel.clone(true);
           figure.position.y=.16;
+          figure.rotation.y=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z)+Math.PI;
           g.add(figure);
           g.userData.figure=figure;
         }else{
@@ -218,10 +219,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       if(!figure) continue;
       const elapsed=(now-(castAt??-1000))/1000;
       const recoil=elapsed<.42 ? Math.sin(Math.PI*Math.min(elapsed/.13,1)/2)*Math.max(0,1-elapsed/.42) : 0;
-      if(aim!==undefined){
-        const turn=aim-figure.rotation.y;
-        figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
-      }
+      const facing=elapsed<.65&&aim!==undefined
+        ? aim
+        : Math.atan2(camera.position.x-spot.position.x,camera.position.z-spot.position.z);
+      // The imported model faces local -Z.
+      const turn=facing+Math.PI-figure.rotation.y;
+      figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
       figure.position.y=.16+recoil*.13;
