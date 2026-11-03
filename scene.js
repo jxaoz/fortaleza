@@ -122,7 +122,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     ctx.fillStyle='#665b54';
     for(let i=0;i<23;i++) ctx.fillRect(random()*128,0,1+random()*3,128);
   });
+  const wood=pattern('#a47c57',.2,(ctx,random)=>{
+    for(let i=0;i<150;i++){
+      ctx.fillStyle=i%3?'#8f6748':'#bc9269';
+      ctx.fillRect(random()*128,random()*128,12+random()*60,1);
+    }
+  });
+  const current=pattern('#698fa4',.1,(ctx,random)=>{
+    for(let i=0;i<180;i++){
+      ctx.fillStyle=i%4?'#779eac':'#b1ccd2';
+      ctx.fillRect(random()*128,random()*128,1+random()*2,5+random()*24);
+    }
+  });
   const surfaces=new Map([
+    [0x927452,[wood,2]], [0x427b94,[current,3]],
     [0x46546a,[soil,3]], [0x89869a,[paving,3]], [0x68758d,[stone,3]],
     [0x58627b,[stone,3]], [0x454861,[stone,3]], [0x343a50,[stone,3]],
     [0x5b6275,[stone,3]], [0x202c41,[needles]], [0x29374a,[needles]],
@@ -147,7 +160,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     m.position.set(x,y,z); m.scale.set(w,h,d); parent.add(m);
     return m;
   }
-  mesh(scene,box,0x46546a,0,-.8,0,84,1.5,37);
+  const riverX=pos(577,0).x;
+  const bankLeft=riverX-2,bankRight=riverX+2;
+  const rampLength=1.25, rise=.78;
+  const bridgeZ=pos(0,275).z;
+  for(const [left,right] of [[-42,bankLeft],[bankRight,42]]){
+    mesh(scene,box,0x46546a,(left+right)/2,-.8,0,right-left,1.5,37);
+  }
+  mesh(scene,box,0x427b94,riverX,-.85,0,4,.12,37);
+  function bridgeHeight(x,y){
+    if(Math.abs(y-bridgeZ)>1.65) return 0;
+    return rise*T.MathUtils.clamp((2+rampLength-Math.abs(x-riverX))/rampLength,0,1);
+  }
   const road = path.map(([x,y])=>pos(x,y));
   const centerline=new T.Path();
   centerline.moveTo(road[0].x,road[0].z);
@@ -161,35 +185,46 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const last=road.at(-1);
   centerline.lineTo(last.x,last.z);
   const points=centerline.getPoints(10);
-  const edge=side=>points.map((point,i)=>{
-    const tangent=points[Math.min(i+1,points.length-1)].clone()
-      .sub(points[Math.max(0,i-1)]).normalize();
-    return new T.Vector2(point.x-tangent.y*1.55*side,point.y+tangent.x*1.55*side);
-  });
-  const outline=new T.Shape([...edge(1),...edge(-1).reverse()]);
-  const surface=new T.ExtrudeGeometry(outline,{
-    depth:.12,bevelEnabled:true,bevelThickness:.055,bevelSize:.095,bevelSegments:3
-  });
-  const uv=surface.attributes.uv;
-  for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
-  const roadway=mesh(scene,surface,0x89869a,0,.15,0,1,1,1);
-  roadway.rotation.x=Math.PI/2;
+  function pave(section){
+    const edge=side=>section.map((point,i)=>{
+      const tangent=section[Math.min(i+1,section.length-1)].clone()
+        .sub(section[Math.max(0,i-1)]).normalize();
+      return new T.Vector2(point.x-tangent.y*1.55*side,point.y+tangent.x*1.55*side);
+    });
+    const outline=new T.Shape([...edge(1),...edge(-1).reverse()]);
+    const surface=new T.ExtrudeGeometry(outline,{
+      depth:.12,bevelEnabled:true,bevelThickness:.055,bevelSize:.095,bevelSegments:3
+    });
+    const uv=surface.attributes.uv;
+    for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
+    const roadway=mesh(scene,surface,0x89869a,0,.15,0,1,1,1);
+    roadway.rotation.x=Math.PI/2;
+  }
+  const leftJoin=bankLeft-rampLength,rightJoin=bankRight+rampLength;
+  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)]);
+  pave([new T.Vector2(rightJoin,bridgeZ),...points.filter(point=>point.x>rightJoin)]);
 
-  const [bridgeStart,bridgeEnd]=road.slice(4,6);
-  for(const side of [1,-1]){
-    const rail=edge(side).filter((_,i)=>points[i].x>=bridgeStart.x&&points[i].x<=bridgeEnd.x);
-    let distanceToPost=0;
-    for(let i=1;i<rail.length;i++){
-      const a=rail[i-1], b=rail[i];
-      const length=a.distanceTo(b);
-      const wall=mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,(a.y+b.y)/2,length+.12,.75,.25);
-      wall.rotation.y=-Math.atan2(b.y-a.y,b.x-a.x);
-      while(distanceToPost<=length){
-        const post=a.clone().lerp(b,distanceToPost/length);
-        mesh(scene,box,0x5b6275,post.x,.94,post.y,.45,.5,.45);
-        distanceToPost+=1.5;
-      }
-      distanceToPost-=length;
+  const segments=[[leftJoin,bankLeft,0,rise],[bankLeft,bankRight,rise,rise],
+    [bankRight,rightJoin,rise,0]];
+  for(const [start,end,low,high] of segments){
+    const angle=Math.atan2(high-low,end-start);
+    const length=Math.hypot(end-start,high-low);
+    const boards=Math.ceil(length/.35);
+    for(let i=0;i<boards;i++){
+      const t=(i+.5)/boards;
+      const plank=mesh(scene,box,0x927452,T.MathUtils.lerp(start,end,t),
+        .06+T.MathUtils.lerp(low,high,t),bridgeZ,length/boards-.012,.18,3.1);
+      plank.rotation.z=angle;
+    }
+    for(const side of [-1,1]){
+      const rail=mesh(scene,box,0x927452,(start+end)/2,.62+(low+high)/2,
+        bridgeZ+side*1.48,length+.05,.15,.15);
+      rail.rotation.z=angle;
+    }
+  }
+  for(const x of [leftJoin,bankLeft,riverX,bankRight,rightJoin]){
+    for(const side of [-1,1]){
+      mesh(scene,box,0x927452,x,.38+bridgeHeight(x,bridgeZ),bridgeZ+side*1.48,.16,.7,.16);
     }
   }
   const gate=pos(...path.at(-1));
@@ -370,9 +405,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       if(!actors.has(m))actors.set(m,makeActor(m));
       const g=actors.get(m), target=road[m.seg];
       g.position.copy(pos(m.x,m.y,Math.sin(performance.now()/(m.k===1?115:65)+m.x)*.12+.1));
+      g.position.y+=bridgeHeight(g.position.x,g.position.z);
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
+    current.offset.y=-(now*.00015)%1;
     for(const shot of shots){
       if(beams.has(shot)) continue;
       const spot=spots.find(g=>{
@@ -403,7 +440,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       scene.remove(b);b.geometry.dispose();b.material.dispose();beams.delete(s);
     }
     for(const s of shots)if(!beams.has(s)){
-      const b=new T.Line(new T.BufferGeometry().setFromPoints([pos(s.x,s.y,2),pos(s.a,s.b,1)]),
+      const impact=pos(s.a,s.b,1);
+      impact.y+=bridgeHeight(impact.x,impact.z);
+      const b=new T.Line(new T.BufferGeometry().setFromPoints([pos(s.x,s.y,2),impact]),
         new T.LineBasicMaterial({color:s.color,transparent:true,opacity:.85}));
       scene.add(b);beams.set(s,b);
     }
