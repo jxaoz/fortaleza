@@ -381,6 +381,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       mesh(scene,box,0x58627b,wallX,2.34,z,.94,.44,.65);
     }
   }
+  const rearWallX=41.55;
+  for(const z of [-18.05,18.05]){
+    mesh(scene,box,0x68758d,(wallX+rearWallX)/2,.575,z,rearWallX-wallX,3.15,.85);
+    for(let x=wallX+.8;x<rearWallX-.45;x+=1.2){
+      mesh(scene,box,0x58627b,x,2.34,z,.65,.44,.94);
+    }
+  }
+  mesh(scene,box,0x68758d,rearWallX,.575,0,.85,3.15,37);
+  for(let z=-18.05;z<=18.05;z+=1.2){
+    mesh(scene,box,0x58627b,rearWallX,2.34,z,.94,.44,.65);
+  }
   const gate=pos(...path.at(-1));
   const castleMoonlight=new T.SpotLight(0xb4ceff,210,29,Math.PI/5,.75,2);
   castleMoonlight.position.set(gate.x-5,17,gate.z-6);
