@@ -189,11 +189,15 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       ctx.stroke();
     }
   });
+  const groundTexture=new T.TextureLoader().load(new URL('./assets/grass-ground.jpg', import.meta.url).href);
+  groundTexture.colorSpace=T.SRGBColorSpace;
+  groundTexture.wrapS=groundTexture.wrapT=T.RepeatWrapping;
+  groundTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   const surfaces=new Map([
     [0x51596b,[caveStone]], [0x41495a,[caveStone]],
     [0x586174,[caveStone]], [0x454d60,[caveStone]],
     [0x927452,[wood,2]], [0x427b94,[current,3]],
-    [0x46546a,[soil,3]], [0x89869a,[paving,3]], [0x68758d,[stone,3]],
+    [0x46546a,[groundTexture,4]], [0x89869a,[paving,3]], [0x68758d,[stone,3]],
     [0x58627b,[stone,3]], [0x454861,[stone,3]], [0x343a50,[stone,3]],
     [0x5b6275,[stone,3]], [0x202c41,[needles]], [0x29374a,[needles]],
     [0x514641,[bark]]
@@ -202,7 +206,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color:color===0x46546a ? 0x9ba98d : color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
     let geometry=shape;
     if(tileSize && shape===box){
