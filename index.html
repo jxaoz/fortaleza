@@ -1,9 +1,10 @@
 <!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fortaleza Rubra</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#080b14;color:#ede6ed;font:16px system-ui}main{max-width:1000px;margin:auto;padding:24px}h1{font:clamp(36px,8vw,70px) Georgia;margin:4px 0 14px}small{color:#ff879b;letter-spacing:.24em}header,p{color:#b9c4d9}canvas{width:100%;display:block;border:1px solid #39445c;border-radius:12px;margin:14px 0;touch-action:manipulation}button{background:#151d30;border:1px solid #56627b;color:white;padding:12px;border-radius:8px;cursor:pointer;margin:3px}button[aria-pressed=true],#go{background:#801e3b}button:disabled{opacity:.45;cursor:default}#hud{font-weight:bold;color:#ff9cad}
-</style><main><header><small>TORRE DE DEFESA · PROTÓTIPO</small><h1>Fortaleza Rubra</h1><p>A Ponte da Cripta · Proteja o coração do clã durante cinco ondas.</p></header><div id="hud"></div><canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta"></canvas><div id="shop"></div><div id="slots"></div><button id="go">Iniciar onda</button><button id="reset">Recomeçar</button><p id="msg" aria-live="polite"></p></main>
-<script>
-const $=id=>document.getElementById(id),ctx=$('map').getContext('2d');
+*{box-sizing:border-box}body{margin:0;background:#080b14;color:#ede6ed;font:16px system-ui}main{max-width:1000px;margin:auto;padding:24px}h1{font:clamp(36px,8vw,70px) Georgia;margin:4px 0 14px}small{color:#ff879b;letter-spacing:.24em}header,p{color:#b9c4d9}canvas{width:100%;aspect-ratio:900/430;display:block;border:1px solid #39445c;border-radius:12px;margin:14px 0;touch-action:manipulation}button{background:#151d30;border:1px solid #56627b;color:white;padding:12px;border-radius:8px;cursor:pointer;margin:3px}button[aria-pressed=true],#go{background:#801e3b}button:disabled{opacity:.45;cursor:default}#hud{font-weight:bold;color:#ff9cad}
+</style><main><header><small>TORRE DE DEFESA · PROTÓTIPO 3D</small><h1>Fortaleza Rubra</h1><p>A Ponte da Cripta · Proteja o coração do clã durante cinco ondas.</p></header><div id="hud"></div><canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta"></canvas><div id="shop"></div><div id="slots"></div><button id="go">Iniciar onda</button><button id="reset">Recomeçar</button><p id="msg" aria-live="polite"></p></main>
+<script type="module">
+import {createScene} from "./scene.js";
+const $=id=>document.getElementById(id);
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
 const pads=[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[615,337],[681,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
@@ -31,7 +32,6 @@ function build(i){
 }
 $('reset').onclick=reset;
 $('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];spawn=0;active=true;refresh();say('A onda '+wave+' chegou.')};
-$('map').onclick=e=>{const r=$('map').getBoundingClientRect();const i=pads.findIndex(([x,y])=>Math.hypot(x-(e.clientX-r.left)*900/r.width,y-(e.clientY-r.top)*430/r.height)<26);if(i>=0)build(i)};
 function tick(dt){
  if(done||!active)return;
  spawn-=dt;
@@ -61,19 +61,6 @@ function tick(dt){
  mobs=mobs.filter(m=>{if(m.health>0)return true;blood+=foes[m.k][3];refresh();return false});
  if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();say(done?'Vitória! A cripta resistiu às cinco ondas.':'Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
 }
-function draw(dt){
- const g=ctx.createLinearGradient(0,0,0,430);g.addColorStop(0,'#15233d');g.addColorStop(1,'#090e1b');ctx.fillStyle=g;ctx.fillRect(0,0,900,430);
- const circle=(x,y,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill()};
- circle(680,63,37,'#a8bde1');
- for(let i=0;i<40;i++)circle(i*97%900,i*31%135,1,'#a5badc');
- for(let i=0;i<28;i++){const x=i*73%900,y=42+i*127%375;ctx.fillStyle='#101a2b';ctx.beginPath();ctx.moveTo(x,y-45);ctx.lineTo(x-21,y+13);ctx.lineTo(x+21,y+13);ctx.fill()}
- ctx.beginPath();path.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.lineJoin='round';ctx.strokeStyle='#141624';ctx.lineWidth=53;ctx.stroke();ctx.strokeStyle='#414258';ctx.lineWidth=39;ctx.stroke();ctx.setLineDash([8,12]);ctx.strokeStyle='#68677a';ctx.lineWidth=2;ctx.stroke();ctx.setLineDash([]);
- ctx.fillStyle='#252b42';ctx.fillRect(805,109,95,202);for(let i=0;i<4;i++)ctx.fillRect(805+i*25,95,14,20);
- ctx.fillStyle='#090b15';ctx.fillRect(805,183,36,55);circle(824,210,11,'#ed4169');ctx.fillStyle='#f594ac';ctx.font='12px Georgia';ctx.fillText('CRIPTA',836,264);
- pads.forEach(([x,y],i)=>{const t=placed[i];circle(x,y,22,t?.jam>0?'#f9cf85':'#627391');circle(x,y,19,t?towers[t.kind][5]:'#202b40');ctx.fillStyle=t?'#111427':'#dae6ff';ctx.font='bold 14px system-ui';ctx.textAlign='center';ctx.fillText(t?['G','A','R'][t.kind]+t.level:i+1,x,y+5)});
- ctx.textAlign='left';
- for(const m of mobs){circle(m.x,m.y,m.k===3?15:m.k===1?12:8,foes[m.k][4]);ctx.fillStyle='#191523';ctx.fillRect(m.x-13,m.y-19,26,4);ctx.fillStyle='#f77691';ctx.fillRect(m.x-13,m.y-19,26*m.health/foes[m.k][1],4)}
- for(const s of shots){ctx.strokeStyle=s.color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.a,s.b);ctx.stroke();s.life-=dt}shots=shots.filter(s=>s.life>0);
-}
-reset();let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+const draw = createScene($('map'), path, pads, build);
+reset();let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 </script>
