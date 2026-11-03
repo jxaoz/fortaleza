@@ -149,15 +149,35 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   mesh(scene,box,0x46546a,0,-.8,0,84,1.5,37);
   const road = path.map(([x,y])=>pos(x,y));
-  for(let i=1;i<road.length;i++){
-    const a=road[i-1], b=road[i];
-    const roadbed=mesh(scene,box,0x89869a,(a.x+b.x)/2,.035,(a.z+b.z)/2,a.distanceTo(b)+2.8,.23,3.1);
-    roadbed.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
-    if(i===5){
-      for(const z of [a.z-1.7,a.z+1.7]) mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,z,a.distanceTo(b)+2,.75,.25);
-      for(let x=a.x;x<=b.x;x+=1.5)for(const z of [a.z-1.7,a.z+1.7])mesh(scene,box,0x5b6275,x,.94,z,.45,.5,.5);
-    }
+  const centerline=new T.Path();
+  centerline.moveTo(road[0].x,road[0].z);
+  for(let i=1;i<road.length-1;i++){
+    const corner=road[i];
+    const entry=corner.clone().lerp(road[i-1],2.1/corner.distanceTo(road[i-1]));
+    const exit=corner.clone().lerp(road[i+1],2.1/corner.distanceTo(road[i+1]));
+    centerline.lineTo(entry.x,entry.z);
+    centerline.quadraticCurveTo(corner.x,corner.z,exit.x,exit.z);
   }
+  const last=road.at(-1);
+  centerline.lineTo(last.x,last.z);
+  const points=centerline.getPoints(10);
+  const edge=side=>points.map((point,i)=>{
+    const tangent=points[Math.min(i+1,points.length-1)].clone()
+      .sub(points[Math.max(0,i-1)]).normalize();
+    return new T.Vector2(point.x-tangent.y*1.55*side,point.y+tangent.x*1.55*side);
+  });
+  const outline=new T.Shape([...edge(1),...edge(-1).reverse()]);
+  const surface=new T.ExtrudeGeometry(outline,{
+    depth:.12,bevelEnabled:true,bevelThickness:.055,bevelSize:.095,bevelSegments:3
+  });
+  const uv=surface.attributes.uv;
+  for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
+  const roadway=mesh(scene,surface,0x89869a,0,.15,0,1,1,1);
+  roadway.rotation.x=Math.PI/2;
+
+  const [a,b]=road.slice(4,6);
+  for(const z of [a.z-1.7,a.z+1.7]) mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,z,a.distanceTo(b)+2,.75,.25);
+  for(let x=a.x;x<=b.x;x+=1.5)for(const z of [a.z-1.7,a.z+1.7])mesh(scene,box,0x5b6275,x,.94,z,.45,.5,.5);
   const gate=pos(...path.at(-1));
   for(const z of [gate.z-3.3,gate.z+3.3]){
     mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
