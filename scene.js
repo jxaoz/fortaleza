@@ -265,6 +265,29 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   }
   const gate=pos(...path.at(-1));
+  const wingShape=new T.Shape();
+  wingShape.moveTo(0,0);
+  wingShape.lineTo(.58,.18);
+  wingShape.lineTo(.47,-.17);
+  wingShape.quadraticCurveTo(.34,-.06,.29,-.23);
+  wingShape.quadraticCurveTo(.16,-.12,0,-.15);
+  const wingGeometry=new T.ShapeGeometry(wingShape);
+  const wingMaterial=new T.MeshBasicMaterial({color:0x171326,side:T.DoubleSide});
+  const bats=Array.from({length:6},()=>{
+    const body=new T.Group();
+    mesh(body,ball,0x21192d,0,0,0,.11,.12,.22);
+    const wings=[1,-1].map(side=>{
+      const wing=new T.Mesh(wingGeometry,wingMaterial);
+      wing.rotation.x=-Math.PI/2;
+      wing.scale.x=side;
+      const hinge=new T.Group();
+      hinge.add(wing);
+      body.add(hinge);
+      return hinge;
+    });
+    scene.add(body);
+    return {body,wings};
+  });
   for(const z of [gate.z-3.3,gate.z+3.3]){
     mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
     for(const x of [-1.25,1.25])for(const dz of [-1,1])mesh(scene,box,0x58627b,gate.x+1+x,7.3,z+dz,.8,.85,.8);
@@ -281,6 +304,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const x=((i*137%810)-405)/10, z=i%2 ? -15-(i%3) : 14+(i%4);
     if(Math.abs(x-riverX)<3.4) continue;
     forest.push({x,z,height:2.8+(i*7%5)*.7,variant:i%3===0?1:0});
+  }
+  for(const [x,z] of [[-39,-15],[-32,-12],[-24,-10],[-15,-16],[-8,-15],[0,-13],
+    [3,10],[17,-16],[22,-12],[28,-16],[34,-14],[38,-10],[36,15],[-36,15],[-25,15],[-14,14]]){
+    forest.push({x,z,height:3.1,variant:2});
   }
   const extraTrees=[
     {variant:1,positions:[[-37,-10],[-28,9],[-16,-9],[-4,12],[5,-10],[15,13],[23,-8],[35,12]]},
@@ -346,6 +373,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         const scale=targetHeight*sizeFactor/height;
         const canopyRadius=Math.hypot(dimensions.x,dimensions.z)*scale/2;
         if(defenseClearings.some(p=>Math.hypot(p.x-x,p.z-z)<canopyRadius+2)) return;
+        const overlapsRoad=points.slice(1).some((b,i)=>{
+          const a=points[i],dx=b.x-a.x,dz=b.y-a.y;
+          const t=T.MathUtils.clamp(((x-a.x)*dx+(z-a.y)*dz)/(dx*dx+dz*dz),0,1);
+          return Math.hypot(x-a.x-t*dx,z-a.y-t*dz)<canopyRadius+1.9;
+        });
+        if(overlapsRoad||Math.abs(x-riverX)<canopyRadius+2) return;
         instance.scale.setScalar(scale);
         scene.add(instance);
       });
@@ -573,6 +606,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
+    bats.forEach(({body,wings},i)=>{
+      const time=now*.001;
+      const angle=time*(.65+i*.045)+i*1.06;
+      const radius=3.3+i*.52;
+      body.position.set(gate.x+Math.cos(angle)*radius,5.1+i*.46+Math.sin(time*2+i)*.45,
+        gate.z+Math.sin(angle)*radius);
+      body.rotation.y=-angle;
+      const flap=Math.sin(time*16+i*2)*.72;
+      wings[0].rotation.z=flap;
+      wings[1].rotation.z=-flap;
+    });
     current.offset.y=-(now*.00015)%1;
     for(const shot of shots){
       if(beams.has(shot)) continue;
