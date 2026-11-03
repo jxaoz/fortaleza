@@ -10,6 +10,32 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   camera.position.set(3, 66, 65);
   camera.lookAt(0, 0, 0);
 
+  const orbit = new T.Spherical().setFromVector3(camera.position);
+  let drag = null;
+  canvas.addEventListener('contextmenu', event => event.preventDefault());
+  canvas.addEventListener('pointerdown', event => {
+    if (event.button !== 2 || drag) return;
+    drag = { id: event.pointerId, x: event.clientX };
+    canvas.setPointerCapture(event.pointerId);
+    canvas.style.cursor = 'grabbing';
+  });
+  canvas.addEventListener('pointermove', event => {
+    if (drag?.id !== event.pointerId) return;
+    if (!(event.buttons & 2)) {
+      canvas.releasePointerCapture(event.pointerId);
+      return;
+    }
+    orbit.theta -= (event.clientX - drag.x) * .008;
+    drag.x = event.clientX;
+    camera.position.setFromSpherical(orbit);
+    camera.lookAt(0, 0, 0);
+  });
+  canvas.addEventListener('lostpointercapture', event => {
+    if (drag?.id !== event.pointerId) return;
+    drag = null;
+    canvas.style.cursor = '';
+  });
+
   function zoomBy(factor) {
     camera.zoom = T.MathUtils.clamp(camera.zoom * factor, .75, 2.25);
     camera.updateProjectionMatrix();
