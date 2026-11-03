@@ -798,21 +798,33 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         }
         return samples ? palm.divideScalar(samples) : tip;
       });
+      const arms=hands.map((hand,index)=>{
+        const shoulder=new T.Vector3(index===0?-.32:.32,1.92,hand.z*.25);
+        const target=new T.Vector3(.15,1.42,index===0?-.62:-.93);
+        const axis=hand.clone().sub(shoulder);
+        const rotation=new T.Quaternion().setFromUnitVectors(axis.clone().normalize(),
+          target.clone().sub(shoulder).normalize());
+        const correction=target.clone().sub(axis.clone().applyQuaternion(rotation).add(shoulder));
+        return {hand,shoulder,axis,rotation,correction};
+      });
       const grip=new Float32Array(positions.count*3);
       const draw=new Float32Array(positions.count*3);
+      const point=new T.Vector3(), posed=new T.Vector3();
       for(let i=0;i<positions.count;i++){
-        const x=(positions.getX(i)-center.x)*scale;
-        const y=(positions.getY(i)-bounds.min.y)*scale;
-        const side=x<0?0:1;
-        const hand=hands[side];
-        const weight=T.MathUtils.smoothstep(Math.abs(x),.36,Math.max(.46,Math.abs(hand.x)-.22))*
-          T.MathUtils.smoothstep(y,.48,.78)*(1-T.MathUtils.smoothstep(y,1.72,2.05));
-        const targetX=.15;
-        const targetZ=side===1?-.93:-.62;
-        grip[i*3]=(targetX-hand.x)*weight/scale;
-        grip[i*3+1]=(1.42-hand.y)*weight/scale;
-        grip[i*3+2]=(targetZ-hand.z)*weight/scale;
-        if(side===0) draw[i*3+2]= .17*weight/scale;
+        point.set((positions.getX(i)-center.x)*scale,(positions.getY(i)-bounds.min.y)*scale,
+          (positions.getZ(i)-center.z)*scale);
+        const side=point.x<0?0:1;
+        const arm=arms[side];
+        const along=posed.copy(point).sub(arm.shoulder).dot(arm.axis)/arm.axis.lengthSq();
+        const palm=point.distanceTo(arm.hand)<.19;
+        const weight=palm ? 1 : T.MathUtils.smoothstep(along,.12,.81)*
+          T.MathUtils.smoothstep(Math.abs(point.x),.32,.52)*
+          T.MathUtils.smoothstep(point.y,.46,.72)*(1-T.MathUtils.smoothstep(point.y,1.92,2.12));
+        posed.copy(point).sub(arm.shoulder).applyQuaternion(arm.rotation)
+          .add(arm.shoulder).addScaledVector(arm.correction,T.MathUtils.smoothstep(along,.12,.8))
+          .sub(point).multiplyScalar(weight/scale);
+        grip.set([posed.x,posed.y,posed.z],i*3);
+        if(side===0) draw[i*3+2]=.17*weight/scale;
       }
       merged.morphTargetsRelative=true;
       merged.morphAttributes.position=[
