@@ -281,23 +281,24 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const last=road.at(-1);
   centerline.lineTo(last.x,last.z);
   const points=centerline.getPoints(10);
-  function pave(section,color=0x89869a){
+  function pave(section,color=0x89869a,flat=false){
     const edge=side=>section.map((point,i)=>{
       const tangent=section[Math.min(i+1,section.length-1)].clone()
         .sub(section[Math.max(0,i-1)]).normalize();
       return new T.Vector2(point.x-tangent.y*1.55*side,point.y+tangent.x*1.55*side);
     });
     const outline=new T.Shape([...edge(1),...edge(-1).reverse()]);
-    const surface=new T.ExtrudeGeometry(outline,{
+    const surface=flat ? new T.ShapeGeometry(outline) : new T.ExtrudeGeometry(outline,{
       depth:.12,bevelEnabled:true,bevelThickness:.055,bevelSize:.095,bevelSegments:3
     });
     const uv=surface.attributes.uv;
     for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
-    const roadway=mesh(scene,surface,color,0,.15,0,1,1,1);
+    const roadway=mesh(scene,surface,color,0,flat ? -.049 : .15,0,1,1,1);
     roadway.rotation.x=Math.PI/2;
+    if(flat) roadway.material.side=T.DoubleSide;
   }
   const leftJoin=bankLeft-rampLength,rightJoin=bankRight+rampLength;
-  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)],0x84674f);
+  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)],0x84674f,true);
   pave([new T.Vector2(rightJoin,bridgeZ),...points.filter(point=>point.x>rightJoin)]);
 
   const segments=[[leftJoin,bankLeft,0,rise],[bankLeft,bankRight,rise,rise],
