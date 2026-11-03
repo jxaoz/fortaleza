@@ -1,4 +1,5 @@
 import * as T from 'three';
+import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 
 export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
@@ -107,7 +108,24 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const scale = 2.6 / extent;
     sniperModel = new T.Group();
     const fitted = new T.Group();
-    fitted.add(model);
+    model.updateMatrixWorld(true);
+    const piecesByMaterial = new Map();
+    model.traverse(part => {
+      if (!part.isMesh) return;
+      const geometry = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
+      geometry.applyMatrix4(part.matrixWorld);
+      if (!piecesByMaterial.has(part.material)) piecesByMaterial.set(part.material, []);
+      piecesByMaterial.get(part.material).push(geometry);
+    });
+    for (const [material, pieces] of piecesByMaterial) {
+      const merged = mergeGeometries(pieces);
+      pieces.forEach(piece => piece.dispose());
+      if (!merged) {
+        sniperModel = undefined;
+        return;
+      }
+      fitted.add(new T.Mesh(merged, material));
+    }
     fitted.scale.setScalar(scale);
     fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
     sniperModel.add(fitted);
@@ -119,17 +137,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const mark=mesh(g,cylinder,0xd2eeff,0,.34,0,1.25,.08,1.25,true);
     g.userData={i,disc,mark,level:0};return g;
   });
+  const pickTargets=spots.map(spot=>spot.userData.disc);
   const pointer=new T.Vector2(), ray=new T.Raycaster();
   canvas.onclick=event=>{
     const r=canvas.getBoundingClientRect();
     pointer.set((event.clientX-r.left)/r.width*2-1,1-(event.clientY-r.top)/r.height*2);
     ray.setFromCamera(pointer,camera);
-    const hit=ray.intersectObjects(spots,true)[0];
-    if(hit){
-      let spot=hit.object;
-      while(!spots.includes(spot)) spot=spot.parent;
-      build(spot.userData.i);
-    }
+    const hit=ray.intersectObjects(pickTargets,false)[0];
+    if(hit) build(hit.object.parent.userData.i);
   };
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
   function updateTower(g,t){
