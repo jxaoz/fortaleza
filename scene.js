@@ -293,7 +293,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     });
     const uv=surface.attributes.uv;
     for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
-    const roadway=mesh(scene,surface,color,0,flat ? -.049 : .15,0,1,1,1);
+    const roadway=mesh(scene,surface,color,0,flat ? -.035 : .15,0,1,1,1);
     roadway.rotation.x=Math.PI/2;
     if(flat) roadway.material.side=T.DoubleSide;
   }
