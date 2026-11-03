@@ -16,6 +16,12 @@ small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10
 .stat{display:grid;gap:3px;min-width:45px}
 .stat strong{font: bold clamp(16px,2vw,24px) Georgia,serif;color:#ffe4d9}
 .stat:first-child strong{color:#ff9aad}
+.blood-value{display:flex;align-items:center;justify-content:center;gap:4px}
+.blood-value svg{width:18px;height:21px}
+.crypt-health{appearance:none;width:clamp(44px,9vw,100px);height:12px;align-self:center;border:1px solid #906974;border-radius:3px;background:#291b2a;overflow:hidden}
+.crypt-health::-webkit-progress-bar{background:#291b2a}
+.crypt-health::-webkit-progress-value{background:linear-gradient(#f57887,#a02448)}
+.crypt-health::-moz-progress-bar{background:linear-gradient(#f57887,#a02448)}
 :root{
   --button-stone:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22110%22%20height%3D%2248%22%3E%3Crect%20width%3D%22110%22%20height%3D%2248%22%20fill%3D%22%23191d2a%22%2F%3E%3Cg%20stroke%3D%22%23252a3b%22%20stroke-width%3D%222%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20fill%3D%22%23505b73%22%20d%3D%22M-6%202%2022%201%2031%208%2027%2019%206%2023%20-8%2016Z%22%2F%3E%3Cpath%20fill%3D%22%23414c64%22%20d%3D%22M26%200%2057%201%2065%2011%2058%2022%2034%2020%2031%209Z%22%2F%3E%3Cpath%20fill%3D%22%23566078%22%20d%3D%22M61%201%2091%20-2%20100%207%2094%2020%2069%2023%2063%2013Z%22%2F%3E%3Cpath%20fill%3D%22%23434b60%22%20d%3D%22M96%200%20116%203%20121%2016%20105%2023%2096%2018Z%22%2F%3E%3Cpath%20fill%3D%22%2347536a%22%20d%3D%22M-8%2023%208%2023%2017%2032%2013%2047%20-5%2050Z%22%2F%3E%3Cpath%20fill%3D%22%2359637a%22%20d%3D%22M13%2023%2038%2022%2048%2031%2040%2048%2017%2050%2016%2033Z%22%2F%3E%3Cpath%20fill%3D%22%23414b63%22%20d%3D%22M43%2023%2069%2024%2078%2034%2069%2048%2044%2048%2048%2033Z%22%2F%3E%3Cpath%20fill%3D%22%234d5971%22%20d%3D%22M74%2024%20103%2023%20112%2034%20104%2048%2074%2050%2079%2035Z%22%2F%3E%3C%2Fg%3E%3Cpath%20d%3D%22M2%205%2021%204%2027%209M34%205%2055%205%2060%2010M69%205%2089%202%2094%207M18%2027%2036%2025%2042%2030M49%2027%2067%2028%2072%2033M81%2028%20101%2026%20106%2032%22%20fill%3D%22none%22%20stroke%3D%22%238791a8%22%20stroke-opacity%3D%22.42%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");
   --button-blood:url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22104%22%20height%3D%2236%22%3E%3Cpath%20fill%3D%22%23390f21%22%20d%3D%22M0%200H104V6C94%2012%2091%205%2085%209C79%2013%2084%2029%2077%2031C68%2032%2075%2012%2066%2011C59%2010%2055%2015%2050%2011C45%207%2037%207%2033%2013C29%2019%2033%2034%2025%2035C17%2035%2024%2015%2017%2011C12%208%205%2014%200%209Z%22%2F%3E%3Cpath%20fill%3D%22%23a72c49%22%20d%3D%22M0%200H104V3C94%209%2089%203%2083%208C77%2012%2081%2027%2077%2028C73%2028%2077%2011%2068%208C59%206%2057%2012%2051%208C45%205%2035%205%2031%2010C27%2017%2031%2031%2025%2032C21%2032%2026%2014%2019%209C12%205%206%2011%200%206Z%22%2F%3E%3Cpath%20d%3D%22M22%208Q27%2010%2026%2017M75%207Q79%209%2078%2015M88%204l8%201%22%20fill%3D%22none%22%20stroke%3D%22%23f57585%22%20stroke-opacity%3D%22.7%22%20stroke-linecap%3D%22round%22%2F%3E%3C%2Fsvg%3E");
@@ -76,8 +82,8 @@ button[aria-pressed=true],#go{
   <path d="m324 63-5-4-5 4 5 4Z" fill="#c2546c"/>
 </svg></h1></header>
       <div id="hud" class="panel" aria-label="Estado da partida">
-        <div class="stat"><span class="label">Sangue</span><strong id="blood"></strong></div>
-        <div class="stat"><span class="label">Cripta</span><strong id="health"></strong></div>
+        <div class="stat"><span class="label">Sangue</span><div class="blood-value"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M8 3h8M12 3v4m0 15v4h5" fill="none" stroke="#db9da8" stroke-width="2" stroke-linecap="round"/><rect x="5" y="7" width="14" height="16" rx="3" fill="#542639" stroke="#db9da8"/><path d="M6 13h12v7a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2Z" fill="#cb3758"/><path d="M9 10h6" stroke="#ffe0dd" stroke-linecap="round"/></svg><strong id="blood"></strong></div></div>
+        <div class="stat"><span class="label">Cripta</span><progress id="health" class="crypt-health" max="12" value="12" aria-label="Vida da Cripta"></progress></div>
         <div class="stat"><span class="label">Onda</span><strong id="wave"></strong></div>
       </div>
     </div>
@@ -106,7 +112,8 @@ function say(s){$('msg').textContent=s}
 towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
 function refresh(){
  $('blood').textContent=blood;
- $('health').textContent=hp+'/12';
+ $('health').value=hp;
+ $('health').title=hp+' de 12 pontos de vida';
  $('wave').textContent=wave+'/5';
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
