@@ -301,17 +301,35 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const portal=new T.Group();
   portal.position.set(entrance.x+.25,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
-  portal.scale.set(1.05,1.12,1);
+  portal.scale.set(2.55,1.62,1);
+  portal.position.y=1.53;
   scene.add(portal);
-  const portalCore=new T.Mesh(new T.CircleGeometry(1,48),new T.MeshBasicMaterial({
-    color:0x220d37,side:T.DoubleSide
-  }));
-  portal.add(portalCore);
-  const portalRim=new T.Mesh(new T.RingGeometry(.88,1,48),new T.MeshBasicMaterial({
-    color:0x9e4de0,side:T.DoubleSide,transparent:true,depthWrite:false
-  }));
-  portalRim.position.z=.012;
-  portal.add(portalRim);
+  const vortex=new T.ShaderMaterial({
+    side:T.DoubleSide,
+    uniforms:{time:{value:0}},
+    vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
+    fragmentShader:[
+      'varying vec2 vUv;',
+      'uniform float time;',
+      'void main(){',
+      '  vec2 p=vUv*2.0-1.0;',
+      '  float r=length(p);',
+      '  float angle=atan(p.y,p.x);',
+      '  float phase=angle*4.0-r*24.0+time*2.7;',
+      '  float spiral=pow(0.5+0.5*cos(phase),13.0);',
+      '  float bands=smoothstep(0.34,0.52,r)*(1.0-smoothstep(0.88,1.0,r));',
+      '  float ring=exp(-90.0*abs(r-0.53-0.02*sin(angle*3.0-time)));',
+      '  float edge=exp(-55.0*abs(r-0.94));',
+      '  vec3 color=vec3(0.035,0.008,0.058);',
+      '  color+=vec3(0.56,0.035,0.67)*spiral*bands;',
+      '  color+=vec3(0.95,0.21,0.57)*ring*(0.65+0.35*cos(angle-time*2.0));',
+      '  color+=vec3(0.24,0.04,0.38)*edge;',
+      '  gl_FragColor=vec4(color,1.0);',
+      '  #include <colorspace_fragment>',
+      '}'
+    ].join('\n')
+  });
+  portal.add(new T.Mesh(new T.CircleGeometry(1,64),vortex));
   const portalLight=new T.PointLight(0x792bd0,5,4);
   portalLight.position.set(entrance.x+.6,1.3,entrance.z);
   scene.add(portalLight);
@@ -658,7 +676,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
     const now=performance.now();
     const portalPulse=.5+.5*Math.sin(now*.003);
-    portalRim.material.opacity=.47+portalPulse*.3;
+    vortex.uniforms.time.value=now*.001;
     portalLight.intensity=3+portalPulse*3;
     bats.forEach(({body,wings},i)=>{
       const time=now*.001;
