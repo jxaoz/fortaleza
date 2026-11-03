@@ -341,9 +341,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     scene.add(cave);
   },undefined,error=>console.warn('Falha ao carregar a caverna.',error));
   const portal=new T.Group();
-  portal.position.set(entrance.x-.13,1.27,entrance.z);
+  portal.position.set(entrance.x-.85,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
-  portal.scale.set(2.55,1.62,1);
+  portal.scale.set(2.25,1.62,1);
   portal.position.y=1.53;
   scene.add(portal);
   const vortex=new T.ShaderMaterial({
@@ -372,7 +372,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   });
   portal.add(new T.Mesh(new T.CircleGeometry(1,64),vortex));
   const portalLight=new T.PointLight(0x792bd0,5,4);
-  portalLight.position.set(entrance.x+.22,1.3,entrance.z);
+  portalLight.position.set(entrance.x-.5,1.3,entrance.z);
   scene.add(portalLight);
   const wallX=bankRight+.24;
   for(const [start,end] of [[-18.5,bridgeZ-1.55],[bridgeZ+1.55,18.5]]){
