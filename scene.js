@@ -1,3 +1,4 @@
+import { STLLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/STLLoader.js';
 import * as T from 'three';
 import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
@@ -246,6 +247,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     mesh(scene,cylinder,0x514641,x/10,.55,z,.18,1.1,.18);
     mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2+.55,z,1.1,h,1.2);
   }
+  let gargoyleModel;
+  new STLLoader().load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
+    geometry.rotateX(-Math.PI/2);
+    geometry.computeBoundingBox();
+    const bounds=geometry.boundingBox;
+    const center=bounds.getCenter(new T.Vector3());
+    const size=bounds.getSize(new T.Vector3());
+    geometry.translate(-center.x,-bounds.min.y,-center.z);
+    const scale=2.3/Math.max(size.x,size.y,size.z);
+    geometry.scale(scale,scale,scale);
+    gargoyleModel=new T.Mesh(geometry,new T.MeshStandardMaterial({color:0x8c94a5,roughness:.9}));
+  },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
     const bounds = new T.Box3().setFromObject(model);
@@ -372,7 +385,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
   function updateTower(g,t){
     const {disc,mark}=g.userData;
-    const customModel = t?.kind===2 ? sniperModel : undefined;
+    const customModel = t?.kind===2 ? sniperModel : t?.kind===0 ? gargoyleModel : undefined;
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
       g.userData.figure=undefined;
@@ -386,7 +399,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           figure.position.y=.16;
           figure.rotation.y=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z)+Math.PI;
           g.add(figure);
-          g.userData.figure=figure;
+          if(t.kind===2) g.userData.figure=figure;
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
