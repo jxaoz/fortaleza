@@ -326,19 +326,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   }
   const entrance=road[0];
-  // Leave a clear opening along the enemy route.
-  mesh(scene,box,0x10101c,entrance.x-2.1,1.35,entrance.z,.25,2.7,4.2);
-  for(const side of [-1,1]){
-    const wall=mesh(scene,ball,0x51596b,entrance.x-1.15,1.12,
-      entrance.z+side*2.05,2.5,2.15,1.04);
-    wall.rotation.z=side*.18;
-    const rubble=mesh(scene,ball,0x41495a,entrance.x+.55,.35,
-      entrance.z+side*2.55,.92,.63,.72);
-    rubble.rotation.y=side*.67;
-  }
-  const roof=mesh(scene,ball,0x586174,entrance.x-1.32,3.07,entrance.z,2.7,1.38,2.8);
-  roof.rotation.y=.18;
-  mesh(scene,ball,0x454d60,entrance.x-2.62,3.32,entrance.z+.58,1.75,1.55,2.23);
+  new GLTFLoader().load(new URL('./assets/caverna.glb', import.meta.url).href,({scene:model})=>{
+    const cave=new T.Group();
+    cave.add(model);
+    cave.rotation.y=Math.PI/2;
+    const bounds=new T.Box3().setFromObject(cave);
+    const size=bounds.getSize(new T.Vector3());
+    const center=bounds.getCenter(new T.Vector3());
+    const scale=6.4/size.z;
+    if(!Number.isFinite(scale)||scale<=0) return;
+    cave.scale.setScalar(scale);
+    cave.position.set(entrance.x+.18-bounds.max.x*scale,-.05-bounds.min.y*scale,
+      entrance.z-center.z*scale);
+    scene.add(cave);
+  },undefined,error=>console.warn('Falha ao carregar a caverna.',error));
   const portal=new T.Group();
   portal.position.set(entrance.x+.25,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
