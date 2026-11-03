@@ -298,6 +298,23 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const roof=mesh(scene,ball,0x586174,entrance.x-1.32,3.07,entrance.z,2.7,1.38,2.8);
   roof.rotation.y=.18;
   mesh(scene,ball,0x454d60,entrance.x-2.62,3.32,entrance.z+.58,1.75,1.55,2.23);
+  const portal=new T.Group();
+  portal.position.set(entrance.x-1.55,1.27,entrance.z);
+  portal.rotation.y=Math.PI/2;
+  portal.scale.set(1.05,1.12,1);
+  scene.add(portal);
+  const portalCore=new T.Mesh(new T.CircleGeometry(1,48),new T.MeshBasicMaterial({
+    color:0x220d37,side:T.DoubleSide
+  }));
+  portal.add(portalCore);
+  const portalRim=new T.Mesh(new T.RingGeometry(.88,1,48),new T.MeshBasicMaterial({
+    color:0x9e4de0,side:T.DoubleSide,transparent:true,depthWrite:false
+  }));
+  portalRim.position.z=.012;
+  portal.add(portalRim);
+  const portalLight=new T.PointLight(0x792bd0,5,4);
+  portalLight.position.set(entrance.x-1.2,1.3,entrance.z);
+  scene.add(portalLight);
   const gate=pos(...path.at(-1));
   const wingShape=new T.Shape();
   wingShape.moveTo(0,0);
@@ -640,6 +657,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
+    const portalPulse=.5+.5*Math.sin(now*.003);
+    portalRim.material.opacity=.47+portalPulse*.3;
+    portalLight.intensity=3+portalPulse*3;
     bats.forEach(({body,wings},i)=>{
       const time=now*.001;
       const angle=time*(.65+i*.045)+i*1.06;
