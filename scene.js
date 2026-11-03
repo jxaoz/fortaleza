@@ -419,19 +419,6 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
   mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
   mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
-  // Keep the playable gate at the end of the road, in front of the imported castle.
-  new GLTFLoader().load(new URL('./assets/castelo.glb', import.meta.url).href,({scene:model})=>{
-    const bounds=new T.Box3().setFromObject(model);
-    const size=bounds.getSize(new T.Vector3());
-    const center=bounds.getCenter(new T.Vector3());
-    const scale=14/Math.max(size.x,size.y,size.z);
-    if(!Number.isFinite(scale)||scale<=0) return;
-    const castle=new T.Group();
-    castle.scale.setScalar(scale);
-    castle.position.set(gate.x+2-bounds.min.x*scale,-.05-bounds.min.y*scale,gate.z-center.z*scale);
-    castle.add(model);
-    scene.add(castle);
-  },undefined,error=>console.warn('Falha ao carregar o castelo.',error));
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
   const forest=[];
