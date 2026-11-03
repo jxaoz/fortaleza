@@ -780,7 +780,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         .replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.48, vFinish.x);')
         .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vFinish.y * 1.5;');
     };
-    alchemistModel=new T.Mesh(geometry,material);
+    const vampire=new T.Mesh(geometry,material);
+    alchemistModel=new T.Group();
+    alchemistModel.add(vampire);
+    const eyeRay=new T.Raycaster();
+    for(const u of [.605,.675]){
+      const x=(u-.5)*size.x*scale;
+      const y=2.29;
+      eyeRay.set(new T.Vector3(x,y,4),new T.Vector3(0,0,-1));
+      const hit=eyeRay.intersectObject(vampire,false)[0];
+      if(hit) mesh(alchemistModel,ball,0xff1737,x,y,hit.point.z+.012,.031,.018,.021,true);
+    }
   },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
