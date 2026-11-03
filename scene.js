@@ -236,16 +236,26 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       seed=(Math.imul(seed,1664525)+1013904223)>>>0;
       return seed/4294967296;
     };
-    const greens=['#192c20','#29432b','#355237','#496445'];
-    for(const color of greens){
-      grassPaint.strokeStyle=color;
-      grassPaint.beginPath();
-      for(let i=0;i<850;i++){
-        const x=sample()*256,y=sample()*256;
-        grassPaint.moveTo(x,y);
-        grassPaint.lineTo(x+(sample()-.5)*5,y-2-sample()*6);
+    const greens=['#17291d','#243b26','#365038','#4d6646','#627650'];
+    for(let patch=0;patch<90;patch++){
+      const x=sample()*256,y=sample()*256,radius=8+sample()*22;
+      const shade=grassPaint.createRadialGradient(x,y,0,x,y,radius);
+      shade.addColorStop(0,patch%3===0?'#76684466':'#152a1f88');
+      shade.addColorStop(1,'#17291d00');
+      grassPaint.fillStyle=shade;
+      grassPaint.fillRect(x-radius,y-radius,radius*2,radius*2);
+    }
+    for(let tuft=0;tuft<1450;tuft++){
+      const x=sample()*256,y=sample()*256;
+      for(let blade=0;blade<6;blade++){
+        const lean=(sample()-.5)*8,length=2+sample()*8;
+        grassPaint.fillStyle=greens[Math.floor(sample()*greens.length)];
+        grassPaint.beginPath();
+        grassPaint.moveTo(x-.65,y);
+        grassPaint.quadraticCurveTo(x+lean*.35,y-length*.65,x+lean,y-length);
+        grassPaint.quadraticCurveTo(x+lean*.65,y-length*.45,x+.65,y);
+        grassPaint.fill();
       }
-      grassPaint.stroke();
     }
     groundTexture.needsUpdate=true;
   }
@@ -355,6 +365,36 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     for(const side of [-1,1]){
       mesh(scene,box,0x927452,x,.38+bridgeHeight(x,bridgeZ),bridgeZ+side*1.48,.16,.7,.16);
     }
+  }
+  const bloodStain=new T.MeshStandardMaterial({color:0x480c1b,roughness:.32,side:T.DoubleSide});
+  const bloodWet=new T.MeshStandardMaterial({color:0x681125,roughness:.22,side:T.DoubleSide});
+  for(const [segment,t,offset,radius] of [
+    [0,.38,.63,.53],[0,.75,-2.18,.68],[1,.55,-.75,.41],[2,.32,.72,.55],
+    [2,.73,2.2,.66],[3,.48,-.64,.48],[5,.67,-.65,.43],[5,.55,2.22,.55]
+  ]){
+    const a=road[segment],b=road[segment+1];
+    const center=a.clone().lerp(b,t);
+    const tangent=b.clone().sub(a).normalize();
+    center.x-=tangent.z*offset;
+    center.z+=tangent.x*offset;
+    const height=segment===5&&Math.abs(offset)<1 ? .157 : -.029;
+    const outline=new T.Shape();
+    for(let i=0;i<18;i++){
+      const angle=i*Math.PI/9;
+      const edge=radius*(1+.15*Math.sin(i*2.4+t*9)+.1*Math.cos(i*1.1));
+      const x=Math.cos(angle)*edge,z=Math.sin(angle)*edge*.65;
+      if(i===0)outline.moveTo(x,z);
+      else outline.lineTo(x,z);
+    }
+    outline.closePath();
+    const pool=new T.Mesh(new T.ShapeGeometry(outline),bloodStain);
+    pool.rotation.x=-Math.PI/2;
+    pool.position.set(center.x,height,center.z);
+    scene.add(pool);
+    const wet=new T.Mesh(pool.geometry,bloodWet);
+    wet.scale.set(.71,.68,1);
+    wet.position.z=.001;
+    pool.add(wet);
   }
   const entrance=road[0];
   new GLTFLoader().load(new URL('./assets/caverna.glb', import.meta.url).href,({scene:model})=>{
