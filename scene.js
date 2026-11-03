@@ -421,27 +421,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     scene.add(body);
     return {body,wings};
   });
-  new GLTFLoader().load(new URL('./assets/castelo-modular.glb', import.meta.url).href,({scene:model})=>{
-    const castle=new T.Group();
-    castle.add(model);
-    const originalBounds=new T.Box3().setFromObject(castle);
-    const center=originalBounds.getCenter(new T.Vector3());
-    const door=model.getObjectByName('door.001')||model.getObjectByName('door.003');
-    if(door){
-      const entrance=new T.Box3().setFromObject(door).getCenter(new T.Vector3());
-      castle.rotation.y=Math.atan2(entrance.z-center.z,entrance.x-center.x)-Math.PI;
-    }
-    const bounds=new T.Box3().setFromObject(castle);
-    const size=bounds.getSize(new T.Vector3());
-    const scale=Math.min(12/size.x,15/size.z,14/size.y);
-    if(!Number.isFinite(scale)||scale<=0) return;
-    const entrance=door ? new T.Box3().setFromObject(door).getCenter(new T.Vector3()) : bounds.getCenter(new T.Vector3());
-    castle.scale.setScalar(scale);
-    castle.position.set(gate.x+.35-bounds.min.x*scale,-.05-bounds.min.y*scale,
-      gate.z-entrance.z*scale);
-    scene.add(castle);
-  },undefined,error=>console.warn('Falha ao carregar o castelo.',error));
+  for(const z of [gate.z-3.3,gate.z+3.3]){
+    mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
+    for(const x of [-1.25,1.25])for(const dz of [-1,1])mesh(scene,box,0x58627b,gate.x+1+x,7.3,z+dz,.8,.85,.8);
+    mesh(scene,cylinder,0x7e2947,gate.x-1.2,1.1,z, .52,2.1,.52);
+    mesh(scene,box,0xff3b63,gate.x-1.75,1.45,z,.12,.85,.26,true);
+  }
+  mesh(scene,box,0x454861,gate.x+1,4.25,gate.z,3.3,1.4,5);
   mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
+  mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
+  mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
   const forest=[];
