@@ -396,7 +396,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const gate=pos(...path.at(-1));
   const castleMoonlight=new T.SpotLight(0xb4ceff,210,29,Math.PI/5,.75,2);
   castleMoonlight.position.set(gate.x-5,17,gate.z-6);
-  castleMoonlight.target.position.set(gate.x+1,2.5,gate.z);
+  castleMoonlight.target.position.set(gate.x+5,4,gate.z);
   scene.add(castleMoonlight,castleMoonlight.target);
   const wingShape=new T.Shape();
   wingShape.moveTo(0,0);
@@ -431,6 +431,34 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
   mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
   mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
+  const keepX=gate.x+8.2;
+  mesh(scene,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
+  mesh(scene,box,0x58627b,keepX,8.15,gate.z,8.9,.45,9.3);
+  for(const side of [-1,1]){
+    for(let offset=-3.6;offset<=3.6;offset+=1.2){
+      mesh(scene,box,0x58627b,keepX+offset,8.68,gate.z+side*4.4,.62,.75,.72);
+      mesh(scene,box,0x58627b,keepX+side*4.2,8.68,gate.z+offset,.72,.75,.62);
+    }
+    for(const x of [gate.x+4.4,gate.x+11.9]){
+      const z=gate.z+side*5.1;
+      mesh(scene,box,0x68758d,x,4.95,z,2.8,10,2.8);
+      mesh(scene,box,0x58627b,x,9.9,z,3.15,.5,3.15);
+      for(const dx of [-1.1,0,1.1]){
+        for(const dz of [-1.1,0,1.1]){
+          if(dx||dz) mesh(scene,box,0x58627b,x+dx,10.45,z+dz,.55,.72,.55);
+        }
+      }
+      for(const height of [3.6,6.8,8.6]){
+        mesh(scene,box,0x454861,x-1.43,height,z,.12,1.05,.46);
+        mesh(scene,box,0x1e1725,x-1.5,height+.05,z,.06,.78,.18);
+      }
+    }
+    for(const x of [keepX-1.9,keepX,keepX+1.9]){
+      const z=gate.z+side*4.42;
+      mesh(scene,box,0x454861,x,5.6,z,.65,1.5,.14);
+      mesh(scene,box,0x351a29,x,5.65,z+side*.08,.29,1.18,.08);
+    }
+  }
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
   const forest=[];
