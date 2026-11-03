@@ -175,9 +175,23 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const roadway=mesh(scene,surface,0x89869a,0,.15,0,1,1,1);
   roadway.rotation.x=Math.PI/2;
 
-  const [a,b]=road.slice(4,6);
-  for(const z of [a.z-1.7,a.z+1.7]) mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,z,a.distanceTo(b)+2,.75,.25);
-  for(let x=a.x;x<=b.x;x+=1.5)for(const z of [a.z-1.7,a.z+1.7])mesh(scene,box,0x5b6275,x,.94,z,.45,.5,.5);
+  const [bridgeStart,bridgeEnd]=road.slice(4,6);
+  for(const side of [1,-1]){
+    const rail=edge(side).filter((_,i)=>points[i].x>=bridgeStart.x&&points[i].x<=bridgeEnd.x);
+    let distanceToPost=0;
+    for(let i=1;i<rail.length;i++){
+      const a=rail[i-1], b=rail[i];
+      const length=a.distanceTo(b);
+      const wall=mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,(a.y+b.y)/2,length+.12,.75,.25);
+      wall.rotation.y=-Math.atan2(b.y-a.y,b.x-a.x);
+      while(distanceToPost<=length){
+        const post=a.clone().lerp(b,distanceToPost/length);
+        mesh(scene,box,0x5b6275,post.x,.94,post.y,.45,.5,.45);
+        distanceToPost+=1.5;
+      }
+      distanceToPost-=length;
+    }
+  }
   const gate=pos(...path.at(-1));
   for(const z of [gate.z-3.3,gate.z+3.3]){
     mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
