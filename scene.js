@@ -4,13 +4,13 @@ export function createScene(canvas, path, pads, build) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
-  scene.background = new T.Color(0x111b31);
-  scene.fog = new T.FogExp2(0x111b31, .013);
+  scene.background = new T.Color(0x344767);
+  scene.fog = new T.FogExp2(0x344767, .008);
   const camera = new T.PerspectiveCamera(38, 900/430, .1, 250);
   camera.position.set(3, 66, 65);
   camera.lookAt(0, 0, 0);
-  scene.add(new T.HemisphereLight(0xb8d8ff, 0x3c2036, 2.5));
-  const moon = new T.DirectionalLight(0x97baff, 2);
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, 3.0));
+  const moon = new T.DirectionalLight(0xc4dbff, 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
@@ -28,11 +28,11 @@ export function createScene(canvas, path, pads, build) {
     m.position.set(x,y,z); m.scale.set(w,h,d); parent.add(m);
     return m;
   }
-  mesh(scene,box,0x222c42,0,-.8,0,84,1.5,37);
+  mesh(scene,box,0x46546a,0,-.8,0,84,1.5,37);
   const road = path.map(([x,y])=>pos(x,y));
   for(let i=1;i<road.length;i++){
     const a=road[i-1], b=road[i];
-    const roadbed=mesh(scene,box,0x555465,(a.x+b.x)/2,.035,(a.z+b.z)/2,a.distanceTo(b)+2.8,.23,3.1);
+    const roadbed=mesh(scene,box,0x89869a,(a.x+b.x)/2,.035,(a.z+b.z)/2,a.distanceTo(b)+2.8,.23,3.1);
     roadbed.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
     if(i===5){
       for(const z of [a.z-1.7,a.z+1.7]) mesh(scene,box,0x343a50,(a.x+b.x)/2,.55,z,a.distanceTo(b)+2,.75,.25);
@@ -41,7 +41,7 @@ export function createScene(canvas, path, pads, build) {
   }
   const gate=pos(...path.at(-1));
   for(const z of [gate.z-3.3,gate.z+3.3]){
-    mesh(scene,box,0x374158,gate.x+1,3.5,z,3.6,7,3.2);
+    mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
     for(const x of [-1.25,1.25])for(const dz of [-1,1])mesh(scene,box,0x58627b,gate.x+1+x,7.3,z+dz,.8,.85,.8);
     mesh(scene,cylinder,0x7e2947,gate.x-1.2,1.1,z, .52,2.1,.52);
     mesh(scene,box,0xff3b63,gate.x-1.75,1.45,z,.12,.85,.26,true);
@@ -59,8 +59,8 @@ export function createScene(canvas, path, pads, build) {
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     scene.add(g);g.position.copy(p);
-    const disc=mesh(g,cylinder,0x526582,0,.14,0,1.65,.35,1.65);
-    const mark=mesh(g,cylinder,0xa2c9ff,0,.34,0,1.25,.08,1.25,true);
+    const disc=mesh(g,cylinder,0x829bb7,0,.14,0,1.65,.35,1.65);
+    const mark=mesh(g,cylinder,0xd2eeff,0,.34,0,1.25,.08,1.25,true);
     g.userData={i,disc,mark,level:0};return g;
   });
   const pointer=new T.Vector2(), ray=new T.Raycaster();
