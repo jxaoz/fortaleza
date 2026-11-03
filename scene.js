@@ -228,6 +228,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   groundTexture.wrapS=groundTexture.wrapT=T.RepeatWrapping;
   groundTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
   const surfaces=new Map([
+    [0x84674f,[soil]],
     [0x51596b,[caveStone]], [0x41495a,[caveStone]],
     [0x586174,[caveStone]], [0x454d60,[caveStone]],
     [0x927452,[wood,2]], [0x427b94,[current,3]],
@@ -280,7 +281,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const last=road.at(-1);
   centerline.lineTo(last.x,last.z);
   const points=centerline.getPoints(10);
-  function pave(section){
+  function pave(section,color=0x89869a){
     const edge=side=>section.map((point,i)=>{
       const tangent=section[Math.min(i+1,section.length-1)].clone()
         .sub(section[Math.max(0,i-1)]).normalize();
@@ -292,11 +293,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     });
     const uv=surface.attributes.uv;
     for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
-    const roadway=mesh(scene,surface,0x89869a,0,.15,0,1,1,1);
+    const roadway=mesh(scene,surface,color,0,.15,0,1,1,1);
     roadway.rotation.x=Math.PI/2;
   }
   const leftJoin=bankLeft-rampLength,rightJoin=bankRight+rampLength;
-  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)]);
+  pave([...points.filter(point=>point.x<leftJoin),new T.Vector2(leftJoin,bridgeZ)],0x84674f);
   pave([new T.Vector2(rightJoin,bridgeZ),...points.filter(point=>point.x>rightJoin)]);
 
   const segments=[[leftJoin,bankLeft,0,rise],[bankLeft,bankRight,rise,rise],
