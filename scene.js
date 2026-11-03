@@ -264,6 +264,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       mesh(scene,box,0x927452,x,.38+bridgeHeight(x,bridgeZ),bridgeZ+side*1.48,.16,.7,.16);
     }
   }
+  const entrance=road[0];
+  // Leave a clear opening along the enemy route.
+  mesh(scene,box,0x10101c,entrance.x-2.1,1.35,entrance.z,.25,2.7,4.2);
+  for(const side of [-1,1]){
+    const wall=mesh(scene,ball,0x51596b,entrance.x-1.15,1.12,
+      entrance.z+side*2.05,2.5,2.15,1.04);
+    wall.rotation.z=side*.18;
+    const rubble=mesh(scene,ball,0x41495a,entrance.x+.55,.35,
+      entrance.z+side*2.55,.92,.63,.72);
+    rubble.rotation.y=side*.67;
+  }
+  const roof=mesh(scene,ball,0x586174,entrance.x-1.32,3.07,entrance.z,2.7,1.38,2.8);
+  roof.rotation.y=.18;
+  mesh(scene,ball,0x454d60,entrance.x-2.62,3.32,entrance.z+.58,1.75,1.55,2.23);
   const gate=pos(...path.at(-1));
   const wingShape=new T.Shape();
   wingShape.moveTo(0,0);
