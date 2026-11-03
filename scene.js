@@ -733,25 +733,37 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     geometry.computeBoundingBox();
     const bounds=geometry.boundingBox;
     const center=bounds.getCenter(new T.Vector3());
-    const height=bounds.getSize(new T.Vector3()).y;
+    const size=bounds.getSize(new T.Vector3());
+    const height=size.y;
     if(!Number.isFinite(height)||height<=0) return;
     geometry.translate(-center.x,-bounds.min.y,-center.z);
     const scale=2.45/height;
     geometry.scale(scale,scale,scale);
     const vertices=geometry.attributes.position;
     const colors=new Float32Array(vertices.count*3);
-    const cloth=new T.Color(0x252033), wine=new T.Color(0x632339);
-    const skin=new T.Color(0xd5bbc4), hair=new T.Color(0x201928);
+    const cloth=new T.Color(0x18141e), red=new T.Color(0x81182f);
+    const skin=new T.Color(0xe1c8c2), gold=new T.Color(0xd49b38);
+    const ember=new T.Color(0xd62608), flame=new T.Color(0xffdf71);
     const color=new T.Color();
     for(let i=0;i<vertices.count;i+=3){
       const x=(vertices.getX(i)+vertices.getX(i+1)+vertices.getX(i+2))/3;
       const y=(vertices.getY(i)+vertices.getY(i+1)+vertices.getY(i+2))/3;
       const z=(vertices.getZ(i)+vertices.getZ(i+1)+vertices.getZ(i+2))/3;
-      const face=y>1.95&&y<2.34&&Math.abs(x)<.3&&z>0;
-      const collar=y>1.52&&y<2.02&&Math.abs(x)<.52&&z>0;
-      color.copy(face?skin:y>=2.34?hair:collar?wine:cloth);
+      const u=x/(size.x*scale)+.5, v=y/2.45;
+      const shaft=.41-.31*v;
+      const weapon=(Math.abs(u-shaft)<.033)||(v>.74&&u<.29);
+      const fire=u>.85&&v>.65&&v<.94;
+      const face=u>.55&&u<.76&&v>.81;
+      const trim=v>.46&&v<.81&&(Math.abs(u-.54)<.022||Math.abs(u-.77)<.026||
+        Math.abs(v-.53)<.018||Math.abs(v-.72)<.016);
       const grain=Math.sin(x*147+y*83+z*119)*Math.cos(z*161-y*103);
-      color.multiplyScalar(1+grain*(face?.055:.13));
+      if(fire){
+        const heat=T.MathUtils.clamp((.94-v)*3.4+.34+.23*Math.sin(x*30+z*22+y*17),0,1);
+        color.copy(ember).lerp(flame,heat);
+      }else{
+        color.copy(weapon?gold:face?skin:trim?red:cloth);
+        color.multiplyScalar(1+grain*(face?.07:.16));
+      }
       for(let j=i;j<i+3;j++) color.toArray(colors,j*3);
     }
     geometry.setAttribute('color',new T.BufferAttribute(colors,3));
