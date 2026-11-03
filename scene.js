@@ -672,6 +672,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
+    if(i===6||i===7){
+      mesh(scene,box,0x68758d,p.x,1.05,p.z,3.8,2.2,3.8);
+      mesh(scene,box,0x58627b,p.x,2.17,p.z,4.1,.24,4.1);
+      for(const dx of [-1.72,1.72]){
+        for(const dz of [-1.72,1.72]){
+          mesh(scene,box,0x58627b,p.x+dx,2.53,p.z+dz,.62,.52,.62);
+        }
+      }
+      p.y=2.29;
+    }
     scene.add(g);g.position.copy(p);
     const disc=mesh(g,cylinder,0x829bb7,0,.14,0,1.65,.35,1.65);
     const mark=mesh(g,cylinder,0xd2eeff,0,.34,0,1.25,.08,1.25,true);
@@ -853,7 +863,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     for(const s of shots)if(!beams.has(s)){
       const impact=pos(s.a,s.b,1);
       impact.y+=bridgeHeight(impact.x,impact.z);
-      const b=new T.Line(new T.BufferGeometry().setFromPoints([pos(s.x,s.y,2),impact]),
+      const source=spots.find((_,i)=>pads[i][0]===s.x&&pads[i][1]===s.y);
+      const b=new T.Line(new T.BufferGeometry().setFromPoints([pos(s.x,s.y,2+(source?.position.y??0)),impact]),
         new T.LineBasicMaterial({color:s.color,transparent:true,opacity:.85}));
       scene.add(b);beams.set(s,b);
     }
