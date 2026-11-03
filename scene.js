@@ -289,6 +289,22 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   for(const {variant,positions} of extraTrees){
     positions.forEach(([x,z],i)=>forest.push({x,z,height:3.3+(i%4)*.45,variant}));
   }
+  const defenseClearings=pads.map(([x,y])=>pos(x,y));
+  for(let row=0;row<8;row++){
+    for(let col=0;col<17;col++){
+      const x=-38+col*4.6+Math.sin(row*7+col)*.65;
+      const z=-16+row*4.5+Math.cos(row+col*3)*.65;
+      if(Math.abs(x-riverX)<4 || x>25&&Math.abs(z)<8) continue;
+      if(defenseClearings.some(p=>Math.hypot(p.x-x,p.z-z)<4)) continue;
+      if(forest.some(tree=>Math.hypot(tree.x-x,tree.z-z)<3.1)) continue;
+      const nearRoad=road.slice(1).some((end,i)=>{
+        const start=road[i],dx=end.x-start.x,dz=end.z-start.z;
+        const t=T.MathUtils.clamp(((x-start.x)*dx+(z-start.z)*dz)/(dx*dx+dz*dz),0,1);
+        return Math.hypot(x-start.x-t*dx,z-start.z-t*dz)<4.4;
+      });
+      if(!nearRoad) forest.push({x,z,height:2.6+(col%4)*.35,variant:(row+col)%4===0?2:1});
+    }
+  }
   function loadTrees(url,variant){
     new GLTFLoader().load(url,({scene:model})=>{
       if(variant===2){
@@ -316,7 +332,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       }
       const bounds=new T.Box3().setFromObject(model);
       const center=bounds.getCenter(new T.Vector3());
-      const height=bounds.getSize(new T.Vector3()).y;
+      const dimensions=bounds.getSize(new T.Vector3());
+      const height=dimensions.y;
       if(!Number.isFinite(height)||height<=0) return;
       const rooted=new T.Group();
       model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
@@ -326,7 +343,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         instance.position.set(x,-.05,z);
         instance.rotation.y=i*2.4;
         const sizeFactor=variant===0 ? .8 : variant===1 ? 1.2 : 1;
-        instance.scale.setScalar(targetHeight*sizeFactor/height);
+        const scale=targetHeight*sizeFactor/height;
+        const canopyRadius=Math.hypot(dimensions.x,dimensions.z)*scale/2;
+        if(defenseClearings.some(p=>Math.hypot(p.x-x,p.z-z)<canopyRadius+2)) return;
+        instance.scale.setScalar(scale);
         scene.add(instance);
       });
     },undefined,error=>console.warn('Falha ao carregar a árvore.',error));
