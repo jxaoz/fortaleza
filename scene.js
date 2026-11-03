@@ -774,7 +774,53 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       cutout.transparent = false;
       cutout.depthWrite = true;
       cutout.alphaTest = .1;
-      fitted.add(new T.Mesh(merged, cutout));
+      const positions=merged.attributes.position;
+      const hands=[-1,1].map(side=>{
+        const tip=new T.Vector3();
+        let outermost=-Infinity;
+        for(let i=0;i<positions.count;i++){
+          const x=(positions.getX(i)-center.x)*scale;
+          const y=(positions.getY(i)-bounds.min.y)*scale;
+          if(y<.55||y>1.65||side*x<=outermost) continue;
+          outermost=side*x;
+          tip.set(x,y,(positions.getZ(i)-center.z)*scale);
+        }
+        const palm=new T.Vector3();
+        let samples=0;
+        for(let i=0;i<positions.count;i++){
+          const x=(positions.getX(i)-center.x)*scale;
+          const y=(positions.getY(i)-bounds.min.y)*scale;
+          if(side*x<outermost-.14||Math.abs(y-tip.y)>.13) continue;
+          palm.x+=x;
+          palm.y+=y;
+          palm.z+=(positions.getZ(i)-center.z)*scale;
+          samples++;
+        }
+        return samples ? palm.divideScalar(samples) : tip;
+      });
+      const grip=new Float32Array(positions.count*3);
+      const draw=new Float32Array(positions.count*3);
+      for(let i=0;i<positions.count;i++){
+        const x=(positions.getX(i)-center.x)*scale;
+        const y=(positions.getY(i)-bounds.min.y)*scale;
+        const side=x<0?0:1;
+        const hand=hands[side];
+        const weight=T.MathUtils.smoothstep(Math.abs(x),.36,Math.max(.46,Math.abs(hand.x)-.22))*
+          T.MathUtils.smoothstep(y,.48,.78)*(1-T.MathUtils.smoothstep(y,1.72,2.05));
+        const targetX=.15;
+        const targetZ=side===1?-.93:-.62;
+        grip[i*3]=(targetX-hand.x)*weight/scale;
+        grip[i*3+1]=(1.42-hand.y)*weight/scale;
+        grip[i*3+2]=(targetZ-hand.z)*weight/scale;
+        if(side===0) draw[i*3+2]= .17*weight/scale;
+      }
+      merged.morphTargetsRelative=true;
+      merged.morphAttributes.position=[
+        new T.BufferAttribute(grip,3),new T.BufferAttribute(draw,3)
+      ];
+      const archer=new T.Mesh(merged,cutout);
+      archer.morphTargetInfluences[0]=1;
+      fitted.add(archer);
     }
     fitted.scale.setScalar(scale);
     fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
@@ -862,6 +908,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
 
   });
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
+  const bowGeometry=new T.TubeGeometry(new T.CatmullRomCurve3([
+    new T.Vector3(0,-.57,.16),new T.Vector3(0,-.31,-.05),
+    new T.Vector3(0,0,-.15),new T.Vector3(0,.31,-.05),new T.Vector3(0,.57,.16)
+  ]),12,.033,5,false);
+  const bowMaterial=new T.MeshStandardMaterial({color:0x634333,roughness:.83});
+  const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
   function updateTower(g,t){
     const {disc,mark}=g.userData;
     const customModel = t?.kind===2 ? sniperModel : t?.kind===0 ? gargoyleModel : undefined;
@@ -879,7 +931,22 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
           figure.rotation.y=facing+(t.kind===2?Math.PI:0);
           g.add(figure);
-          if(t.kind===2) g.userData.figure=figure;
+          if(t.kind===2){
+            g.userData.figure=figure;
+            const bow=new T.Group();
+            bow.position.set(.15,1.42,-.78);
+            figure.add(bow);
+            bow.add(new T.Mesh(bowGeometry,bowMaterial));
+            const stringGeometry=new T.BufferGeometry().setFromPoints([
+              new T.Vector3(0,-.57,.16),new T.Vector3(0,0,.16),new T.Vector3(0,.57,.16)
+            ]);
+            bow.add(new T.Line(stringGeometry,bowStringMaterial));
+            figure.userData.bowString=stringGeometry.attributes.position;
+            figure.userData.armMeshes=[];
+            figure.traverse(part=>{
+              if(part.morphTargetInfluences) figure.userData.armMeshes.push(part);
+            });
+          }
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
@@ -962,6 +1029,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       // The imported model faces local -Z.
       const turn=facing+Math.PI-figure.rotation.y;
       figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
+      const pull=elapsed<.16 ? .17*Math.exp(-elapsed*30) : 0;
+      figure.userData.bowString.setZ(1,.16+pull);
+      figure.userData.bowString.needsUpdate=true;
+      for(const part of figure.userData.armMeshes){
+        part.morphTargetInfluences[1]=pull/.17;
+      }
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
       figure.position.y=.16+recoil*.13;
