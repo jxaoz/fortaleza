@@ -257,7 +257,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     geometry.translate(-center.x,-bounds.min.y,-center.z);
     const scale=2.3/Math.max(size.x,size.y,size.z);
     geometry.scale(scale,scale,scale);
-    gargoyleModel=new T.Mesh(geometry,new T.MeshStandardMaterial({color:0x8c94a5,roughness:.9}));
+    const positions=geometry.attributes.position;
+    const uv=new Float32Array(positions.count*2);
+    for(let i=0;i<positions.count;i++){
+      uv[2*i]=positions.getX(i)+positions.getZ(i)*.73;
+      uv[2*i+1]=positions.getY(i)+positions.getZ(i)*.41;
+    }
+    geometry.setAttribute('uv',new T.BufferAttribute(uv,2));
+    gargoyleModel=new T.Mesh(geometry,new T.MeshStandardMaterial({
+      color:0xa5a9b7,map:soil,bumpMap:soil,bumpScale:.035,roughness:1
+    }));
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
@@ -397,7 +406,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         if(customModel){
           const figure=customModel.clone(true);
           figure.position.y=.16;
-          figure.rotation.y=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z)+Math.PI;
+          const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
+          figure.rotation.y=facing+(t.kind===2?Math.PI:0);
           g.add(figure);
           if(t.kind===2) g.userData.figure=figure;
         }else{
@@ -454,7 +464,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
     for(const spot of spots){
       const {figure,aim,castAt,i}=spot.userData;
-      if(!figure) continue;
+      if(!figure){
+        if(spot.userData.model===gargoyleModel&&gargoyleModel){
+          spot.children[2].rotation.y=Math.atan2(camera.position.x-spot.position.x,camera.position.z-spot.position.z);
+        }
+        continue;
+      }
       const elapsed=(now-(castAt??-1000))/1000;
       const recoil=elapsed<.42 ? Math.sin(Math.PI*Math.min(elapsed/.13,1)/2)*Math.max(0,1-elapsed/.42) : 0;
       const facing=elapsed<.65&&aim!==undefined
