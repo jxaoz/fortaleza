@@ -264,9 +264,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       uv[2*i+1]=positions.getY(i)+positions.getZ(i)*.41;
     }
     geometry.setAttribute('uv',new T.BufferAttribute(uv,2));
-    gargoyleModel=new T.Mesh(geometry,new T.MeshStandardMaterial({
+    const statue=new T.Mesh(geometry,new T.MeshStandardMaterial({
       color:0xa5a9b7,map:soil,bumpMap:soil,bumpScale:.035,roughness:1
     }));
+    gargoyleModel=new T.Group();
+    gargoyleModel.add(statue);
+    const eyeHeight=size.y*scale*.81;
+    const eyeRay=new T.Raycaster();
+    for(const x of [-.105,.105]){
+      eyeRay.set(new T.Vector3(x,eyeHeight,4),new T.Vector3(0,0,-1));
+      const hit=eyeRay.intersectObject(statue,false)[0];
+      if(!hit) continue;
+      const z=hit.point.z+.035;
+      mesh(gargoyleModel,ball,0xff173e,x,eyeHeight,z,.064,.046,.035,true);
+      mesh(gargoyleModel,ball,0xffa0a7,x,eyeHeight,z+.028,.029,.022,.015,true);
+    }
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
