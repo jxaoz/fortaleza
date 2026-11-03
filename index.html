@@ -1,7 +1,66 @@
 <!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fortaleza Rubra</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#080b14;color:#ede6ed;font:16px system-ui}main{max-width:1000px;margin:auto;padding:24px}h1{font:clamp(36px,8vw,70px) Georgia;margin:4px 0 14px}small{color:#ff879b;letter-spacing:.24em}header,p{color:#b9c4d9}canvas{width:100%;aspect-ratio:900/430;display:block;border:1px solid #39445c;border-radius:12px;margin:14px 0;touch-action:manipulation}button{background:#151d30;border:1px solid #56627b;color:white;padding:12px;border-radius:8px;cursor:pointer;margin:3px}button[aria-pressed=true],#go{background:#801e3b}button:disabled{opacity:.45;cursor:default}#hud{font-weight:bold;color:#ff9cad}
-</style><main><header><small>TORRE DE DEFESA · PROTÓTIPO 3D</small><h1>Fortaleza Rubra</h1><p>A Ponte da Cripta · Proteja o coração do clã durante cinco ondas.</p><p>Arraste com o botão esquerdo para mover o mapa ou com o direito para girar a câmera.</p></header><div id="hud"></div><canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta"></canvas><div role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div><div id="shop"></div><div id="slots"></div><button id="go">Iniciar onda</button><button id="reset">Recomeçar</button><p id="msg" aria-live="polite"></p></main>
+*{box-sizing:border-box}
+body{margin:0;background:#101728;color:#f8eee3;font:14px system-ui;overflow:hidden}
+main{position:relative;height:100vh;height:100dvh;isolation:isolate}
+canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+.overlay{position:absolute;inset:0;display:grid;grid-template-rows:auto 1fr auto;padding:clamp(8px,2vw,24px);gap:8px;pointer-events:none}
+.overlay button{pointer-events:auto}
+.top,.bottom{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.bottom{align-items:flex-end}
+.panel{background:linear-gradient(145deg,#252739f5,#100e19f5);border:1px solid #76604f;box-shadow:inset 0 0 0 3px #090a1280,0 5px 20px #0007;border-radius:5px;padding:10px 14px}
+.brand{border-left:3px solid #cf536f}
+h1{margin:2px 0 0;font:clamp(21px,3vw,42px) Georgia,serif}
+small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10px;letter-spacing:.16em}
+#hud{display:flex;gap:clamp(8px,2vw,26px);text-align:center}
+.stat{display:grid;gap:3px;min-width:45px}
+.stat strong{font: bold clamp(16px,2vw,24px) Georgia,serif;color:#ffe4d9}
+.stat:first-child strong{color:#ff9aad}
+button{font:inherit;color:#f8eee3;background:linear-gradient(#343247,#201c2a);border:1px solid #6e5c57;border-radius:4px;min-height:36px;padding:6px 10px;cursor:pointer}
+button:hover:not(:disabled){border-color:#ffb1a9;filter:brightness(1.2)}
+button:focus-visible{outline:2px solid #ffcf98;outline-offset:2px}
+button:disabled{opacity:.48;cursor:default}
+button[aria-pressed=true],#go{background:linear-gradient(#8e2a47,#4d162a);border-color:#d77985}
+#shop,#slots,.zoom,.actions{display:flex;gap:5px}
+#shop{margin:5px 0 7px}
+#shop button{display:grid;text-align:left;gap:2px;flex:1}
+#shop button small{letter-spacing:.02em;text-transform:none;color:#ffc1b1}
+#slots button{flex:1;min-width:0;padding:4px;min-height:28px;font-size:12px}
+.controls{display:grid;justify-items:end;gap:6px}
+.zoom button{min-width:36px;font-size:20px;padding:0 7px}
+#msg{margin:0;max-width:40ch;text-align:right;color:#fff3df;text-shadow:0 1px 4px #000,0 1px 8px #000;font-size:12px}
+@media(max-width:610px){
+  .bottom{flex-direction:column-reverse;align-items:stretch}
+  .controls{grid-template-columns:auto 1fr;align-items:end;justify-items:end}
+  #msg{grid-column:1/-1}
+  .panel{padding:7px 9px}
+  #hud{gap:5px}
+  .stat{min-width:33px}
+  .label,small{letter-spacing:.06em;font-size:9px}
+}
+</style>
+<main>
+  <canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta" title="Arraste com o botão esquerdo para mover e com o direito para girar. Use a roda para aproximar."></canvas>
+  <div class="overlay">
+    <div class="top">
+      <header class="brand panel"><small>A Ponte da Cripta</small><h1>Fortaleza Rubra</h1></header>
+      <div id="hud" class="panel" aria-label="Estado da partida">
+        <div class="stat"><span class="label">Sangue</span><strong id="blood"></strong></div>
+        <div class="stat"><span class="label">Cripta</span><strong id="health"></strong></div>
+        <div class="stat"><span class="label">Onda</span><strong id="wave"></strong></div>
+      </div>
+    </div>
+    <div></div>
+    <div class="bottom">
+      <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div><div id="slots" aria-label="Plataformas"></div></section>
+      <div class="controls">
+        <p id="msg" aria-live="polite"></p>
+        <div class="zoom" role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
+        <div class="actions"><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
+      </div>
+    </div>
+  </div>
+</main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import {createScene} from "./scene.js";
@@ -13,10 +72,12 @@ const foes=[['Lobisomem',44,78,11,'#d1b8ff'],['Troll',180,37,24,'#91c99d'],['Ca�
 const waves=[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
 function say(s){$('msg').textContent=s}
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');b.textContent=name+' · '+cost+' sangue';b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
+towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
 pads.forEach((_,i)=>{const b=document.createElement('button');b.onclick=()=>build(i);$('slots').append(b)});
 function refresh(){
- $('hud').textContent='Sangue '+blood+'  ◆  Cripta '+hp+'/12  ◆  Onda '+wave+'/5';
+ $('blood').textContent=blood;
+ $('health').textContent=hp+'/12';
+ $('wave').textContent=wave+'/5';
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
  [...$('slots').children].forEach((b,i)=>{b.textContent=placed[i]?(i+1)+' · N'+placed[i].level:i+1;b.disabled=done});
