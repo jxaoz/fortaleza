@@ -284,6 +284,28 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   function loadTrees(url,variant){
     new GLTFLoader().load(url,({scene:model})=>{
+      if(variant===2){
+        const leaves=model.getObjectByName('leaves');
+        if(leaves?.isMesh){
+          const original=leaves.material.map;
+          const foliage=document.createElement('canvas');
+          foliage.width=foliage.height=512;
+          const ctx=foliage.getContext('2d');
+          ctx.drawImage(original.image,0,0,512,512);
+          ctx.globalCompositeOperation='source-atop';
+          ctx.fillStyle='#243c30c9';
+          ctx.fillRect(0,0,512,512);
+          ctx.globalAlpha=.36;
+          ctx.fillStyle=ctx.createPattern(needles.image,'repeat');
+          ctx.fillRect(0,0,512,512);
+          const map=new T.CanvasTexture(foliage);
+          map.colorSpace=T.SRGBColorSpace;
+          map.flipY=original.flipY;
+          leaves.material=new T.MeshStandardMaterial({
+            color:0x73947b,map,alphaTest:.42,side:T.DoubleSide,roughness:1
+          });
+        }
+      }
       const bounds=new T.Box3().setFromObject(model);
       const center=bounds.getCenter(new T.Vector3());
       const height=bounds.getSize(new T.Vector3()).y;
@@ -303,7 +325,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   loadTrees(new URL('./assets/arvore.glb', import.meta.url).href,0);
   loadTrees(new URL('./assets/arvore-seca.gltf', import.meta.url).href,1);
-  for(const [x,z,height] of [[-26,-13,4.7],[-13,-15,5.3],[2,-14,4.5],[20,-15,5],[29,14,4.8],[-19,15,4.6]]){
+  for(const [x,z,height] of [[-26,-13,4.7],[-13,-15,5.3],[2,-14,4.5],[20,-15,5],[29,14,4.8],[-19,15,4.6],[-33,-15,4.4],[-22,-16,4.9],[-6,-12,4.2],[25,-12,4.1],[-32,13,4.5],[-10,16,4.8],[3,14,4.2],[18,15,4.7]]){
     forest.push({x,z,height,variant:2});
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
