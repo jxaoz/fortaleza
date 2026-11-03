@@ -1033,10 +1033,28 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     disc.visible=!customModel||t.jam>0;
     disc.scale.y=t?.jam>0?.64:.35;
   }
+  let trollModel;
+  new GLTFLoader().load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const center=bounds.getCenter(new T.Vector3());
+    const height=bounds.getSize(new T.Vector3()).y;
+    if(!Number.isFinite(height)||height<=0) return;
+    const scale=2.8/height;
+    trollModel=new T.Group();
+    model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
+    trollModel.add(model);
+    trollModel.scale.setScalar(scale);
+  },undefined,error=>console.warn('Falha ao carregar o Troll.',error));
   const actors=new Map(), beams=new Map();
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
     const g=new T.Group(), c=colors[m.k];
+    if(m.k===1&&trollModel){
+      g.add(trollModel.clone(true));
+      g.userData.customTroll=true;
+      scene.add(g);
+      return g;
+    }
     const size=[.72,1.05,.62,.78][m.k];
     mesh(g,ball,c,0,size*1.45,0,size*.78,size,size*.58);
     mesh(g,ball,c,0,size*2.36,.17,size*.52,size*.53,size*.49);
@@ -1057,7 +1075,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const live=new Set(mobs);
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}
     for(const m of mobs){
-      if(!actors.has(m))actors.set(m,makeActor(m));
+      const previous=actors.get(m);
+      if(!previous||(m.k===1&&trollModel&&!previous.userData.customTroll)){
+        if(previous)scene.remove(previous);
+        actors.set(m,makeActor(m));
+      }
       const g=actors.get(m), target=road[m.seg];
       g.position.copy(pos(m.x,m.y,Math.sin(performance.now()/(m.k===1?115:65)+m.x)*.12+.1));
       g.position.y+=bridgeHeight(g.position.x,g.position.z);
