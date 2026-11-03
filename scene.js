@@ -374,7 +374,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   portalLight.position.set(entrance.x+.6,1.3,entrance.z);
   scene.add(portalLight);
   const wallX=bankRight+.24;
-  for(const [start,end] of [[-18.5,bridgeZ-2.5],[bridgeZ+2.5,18.5]]){
+  for(const [start,end] of [[-18.5,bridgeZ-1.55],[bridgeZ+1.55,18.5]]){
     mesh(scene,box,0x68758d,wallX,.575,(start+end)/2,.85,3.15,end-start);
     for(let z=start+.48;z<end-.25;z+=1.2){
       mesh(scene,box,0x58627b,wallX,2.34,z,.94,.44,.65);
