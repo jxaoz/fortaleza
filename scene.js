@@ -774,7 +774,42 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       cutout.transparent = false;
       cutout.depthWrite = true;
       cutout.alphaTest = .1;
-      fitted.add(new T.Mesh(merged, cutout));
+      const positions=merged.attributes.position;
+      const hands=[-1,1].map(side=>{
+        const tip=new T.Vector3();
+        let outermost=-Infinity;
+        for(let i=0;i<positions.count;i++){
+          const x=(positions.getX(i)-center.x)*scale;
+          const y=(positions.getY(i)-bounds.min.y)*scale;
+          if(y<.55||y>1.65||side*x<=outermost) continue;
+          outermost=side*x;
+          tip.set(x,y,(positions.getZ(i)-center.z)*scale);
+        }
+        return tip;
+      });
+      const grip=new Float32Array(positions.count*3);
+      const draw=new Float32Array(positions.count*3);
+      for(let i=0;i<positions.count;i++){
+        const x=(positions.getX(i)-center.x)*scale;
+        const y=(positions.getY(i)-bounds.min.y)*scale;
+        const side=x<0?0:1;
+        const hand=hands[side];
+        const weight=T.MathUtils.smoothstep(Math.abs(x),.36,Math.max(.45,Math.abs(hand.x)-.1))*
+          T.MathUtils.smoothstep(y,.48,.78)*(1-T.MathUtils.smoothstep(y,1.72,2.05));
+        const targetX=.38;
+        const targetZ=side===1?-.59:-.28;
+        grip[i*3]=(targetX-hand.x)*weight/scale;
+        grip[i*3+1]=(1.16-hand.y)*weight/scale;
+        grip[i*3+2]=(targetZ-hand.z)*weight/scale;
+        if(side===0) draw[i*3+2]=.28*weight/scale;
+      }
+      merged.morphTargetsRelative=true;
+      merged.morphAttributes.position=[
+        new T.BufferAttribute(grip,3),new T.BufferAttribute(draw,3)
+      ];
+      const archer=new T.Mesh(merged,cutout);
+      archer.morphTargetInfluences[0]=1;
+      fitted.add(archer);
     }
     fitted.scale.setScalar(scale);
     fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
@@ -896,13 +931,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
             ]);
             bow.add(new T.Line(stringGeometry,bowStringMaterial));
             figure.userData.bowString=stringGeometry.attributes.position;
-            figure.userData.bow=bow;
-            const hands=[1,-1].map(side=>{
-              const hand=mesh(figure,ball,0xb69391,0,0,0,.105,.092,.09);
-              const sleeve=mesh(figure,cylinder,0x272333,0,0,0,.095,1,.095);
-              return {hand,sleeve,shoulder:new T.Vector3(side*.24,1.66,0)};
+            figure.userData.armMeshes=[];
+            figure.traverse(part=>{
+              if(part.morphTargetInfluences) figure.userData.armMeshes.push(part);
             });
-            figure.userData.bowHands=hands;
           }
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
@@ -989,16 +1021,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       const pull=elapsed<.16 ? .28*Math.exp(-elapsed*30) : 0;
       figure.userData.bowString.setZ(1,.16+pull);
       figure.userData.bowString.needsUpdate=true;
-      const bow=figure.userData.bow;
-      bow.rotation.x=-recoil*.28;
-      bow.updateMatrix();
-      figure.userData.bowHands.forEach(({hand,sleeve,shoulder},index)=>{
-        hand.position.set(0,0,index===0?-.15:.16+pull).applyMatrix4(bow.matrix);
-        sleeve.position.copy(shoulder).lerp(hand.position,.5);
-        const direction=hand.position.clone().sub(shoulder);
-        sleeve.scale.y=direction.length();
-        sleeve.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
-      });
+      for(const part of figure.userData.armMeshes){
+        part.morphTargetInfluences[1]=pull/.28;
+      }
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
       figure.position.y=.16+recoil*.13;
