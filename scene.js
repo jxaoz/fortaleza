@@ -738,8 +738,25 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     geometry.translate(-center.x,-bounds.min.y,-center.z);
     const scale=2.45/height;
     geometry.scale(scale,scale,scale);
+    const vertices=geometry.attributes.position;
+    const colors=new Float32Array(vertices.count*3);
+    const cloth=new T.Color(0x252033), wine=new T.Color(0x632339);
+    const skin=new T.Color(0xd5bbc4), hair=new T.Color(0x201928);
+    const color=new T.Color();
+    for(let i=0;i<vertices.count;i+=3){
+      const x=(vertices.getX(i)+vertices.getX(i+1)+vertices.getX(i+2))/3;
+      const y=(vertices.getY(i)+vertices.getY(i+1)+vertices.getY(i+2))/3;
+      const z=(vertices.getZ(i)+vertices.getZ(i+1)+vertices.getZ(i+2))/3;
+      const face=y>1.95&&y<2.34&&Math.abs(x)<.3&&z>0;
+      const collar=y>1.52&&y<2.02&&Math.abs(x)<.52&&z>0;
+      color.copy(face?skin:y>=2.34?hair:collar?wine:cloth);
+      const grain=Math.sin(x*147+y*83+z*119)*Math.cos(z*161-y*103);
+      color.multiplyScalar(1+grain*(face?.055:.13));
+      for(let j=i;j<i+3;j++) color.toArray(colors,j*3);
+    }
+    geometry.setAttribute('color',new T.BufferAttribute(colors,3));
     alchemistModel=new T.Mesh(geometry,new T.MeshStandardMaterial({
-      color:0x645371,roughness:.86
+      vertexColors:true,roughness:.86
     }));
   },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
