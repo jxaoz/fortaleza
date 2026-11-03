@@ -115,6 +115,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       if (!part.isMesh) return;
       const geometry = part.geometry.index ? part.geometry.toNonIndexed() : part.geometry.clone();
       geometry.applyMatrix4(part.matrixWorld);
+      // Baking a mirrored transform removes the renderer's automatic winding flip.
+      if(part.matrixWorld.determinant()<0){
+        for(const attribute of Object.values(geometry.attributes)){
+          const {array,itemSize,count}=attribute;
+          for(let vertex=0;vertex<count;vertex+=3){
+            for(let component=0;component<itemSize;component++){
+              const a=(vertex+1)*itemSize+component;
+              const b=(vertex+2)*itemSize+component;
+              const value=array[a];
+              array[a]=array[b];
+              array[b]=value;
+            }
+          }
+        }
+      }
       if (!piecesByMaterial.has(part.material)) piecesByMaterial.set(part.material, []);
       piecesByMaterial.get(part.material).push(geometry);
     });
