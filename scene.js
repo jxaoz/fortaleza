@@ -381,6 +381,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   }
   const gate=pos(...path.at(-1));
+  const castleMoonlight=new T.SpotLight(0xb4ceff,210,29,Math.PI/5,.75,2);
+  castleMoonlight.position.set(gate.x-5,17,gate.z-6);
+  castleMoonlight.target.position.set(gate.x+1,2.5,gate.z);
+  scene.add(castleMoonlight,castleMoonlight.target);
   const wingShape=new T.Shape();
   wingShape.moveTo(0,0);
   wingShape.lineTo(.58,.18);
