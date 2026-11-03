@@ -376,19 +376,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   scene.add(portalLight);
   const wallX=bankRight+.24;
   for(const [start,end] of [[-18.5,bridgeZ-1.55],[bridgeZ+1.55,18.5]]){
-    mesh(scene,box,0x68758d,wallX,.575,(start+end)/2,.85,3.15,end-start);
+    mesh(scene,box,0x68758d,wallX,-.10,(start+end)/2,.85,4.5,end-start);
     for(let z=start+.48;z<end-.25;z+=1.2){
       mesh(scene,box,0x58627b,wallX,2.34,z,.94,.44,.65);
     }
   }
-  const rearWallX=41.55;
-  for(const z of [-18.05,18.05]){
-    mesh(scene,box,0x68758d,(wallX+rearWallX)/2,.575,z,rearWallX-wallX,3.15,.85);
+  const rearWallX=41.76;
+  for(const z of [-18.26,18.26]){
+    mesh(scene,box,0x68758d,(wallX+rearWallX)/2,-.10,z,rearWallX-wallX,4.5,.85);
     for(let x=wallX+.8;x<rearWallX-.45;x+=1.2){
       mesh(scene,box,0x58627b,x,2.34,z,.65,.44,.94);
     }
   }
-  mesh(scene,box,0x68758d,rearWallX,.575,0,.85,3.15,37);
+  mesh(scene,box,0x68758d,rearWallX,-.10,0,.85,4.5,37);
   for(let z=-18.05;z<=18.05;z+=1.2){
     mesh(scene,box,0x58627b,rearWallX,2.34,z,.94,.44,.65);
   }
