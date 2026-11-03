@@ -728,6 +728,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       mesh(gargoyleModel,ball,0xffa0a7,x,eyeHeight,z+.028,.029,.022,.015,true);
     }
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
+  let alchemistModel;
+  new GLTFLoader().load(new URL('./assets/alquimista.glb', import.meta.url).href,({scene:model})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const size=bounds.getSize(new T.Vector3());
+    const center=bounds.getCenter(new T.Vector3());
+    const scale=2.45/Math.max(size.x,size.y,size.z);
+    if(!Number.isFinite(scale)||scale<=0) return;
+    const fitted=new T.Group();
+    fitted.add(model);
+    fitted.scale.setScalar(scale);
+    fitted.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+    alchemistModel=new T.Group();
+    alchemistModel.add(fitted);
+  },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
     const bounds = new T.Box3().setFromObject(model);
@@ -928,7 +942,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
   function updateTower(g,t){
     const {disc,mark}=g.userData;
-    const customModel = t?.kind===2 ? sniperModel : t?.kind===0 ? gargoyleModel : undefined;
+    const customModel = [gargoyleModel,alchemistModel,sniperModel][t?.kind];
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
       g.userData.figure=undefined;
