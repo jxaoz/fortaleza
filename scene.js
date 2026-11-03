@@ -276,13 +276,32 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
+  const forest=[];
   for(let i=0;i<44;i++){
-    const x=(i*137%810)-405, z=i%2 ? -15-(i%3) : 14+(i%4);
-    if(Math.abs(x/10-riverX)<3.4) continue;
-    const h=2.8+(i*7%5)*.7;
-    mesh(scene,cylinder,0x514641,x/10,.55,z,.18,1.1,.18);
-    mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2+.55,z,1.1,h,1.2);
+    const x=((i*137%810)-405)/10, z=i%2 ? -15-(i%3) : 14+(i%4);
+    if(Math.abs(x-riverX)<3.4) continue;
+    forest.push({x,z,height:2.8+(i*7%5)*.7,variant:i%3===0?1:0});
   }
+  function loadTrees(url,variant){
+    new GLTFLoader().load(url,({scene:model})=>{
+      const bounds=new T.Box3().setFromObject(model);
+      const center=bounds.getCenter(new T.Vector3());
+      const height=bounds.getSize(new T.Vector3()).y;
+      if(!Number.isFinite(height)||height<=0) return;
+      const rooted=new T.Group();
+      model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
+      rooted.add(model);
+      forest.filter(tree=>tree.variant===variant).forEach(({x,z,height:targetHeight},i)=>{
+        const instance=rooted.clone(true);
+        instance.position.set(x,-.05,z);
+        instance.rotation.y=i*2.4;
+        instance.scale.setScalar(targetHeight/height);
+        scene.add(instance);
+      });
+    },undefined,error=>console.warn('Falha ao carregar a árvore.',error));
+  }
+  loadTrees(new URL('./assets/arvore.glb', import.meta.url).href,0);
+  loadTrees(new URL('./assets/arvore-seca.gltf', import.meta.url).href,1);
   let gargoyleModel;
   new STLLoader().load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
     geometry.rotateX(-Math.PI/2);
