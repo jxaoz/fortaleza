@@ -282,6 +282,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     if(Math.abs(x-riverX)<3.4) continue;
     forest.push({x,z,height:2.8+(i*7%5)*.7,variant:i%3===0?1:0});
   }
+  const extraTrees=[
+    {variant:1,positions:[[-37,-10],[-28,9],[-16,-9],[-4,12],[5,-10],[15,13],[23,-8],[35,12]]},
+    {variant:2,positions:[[-36,9],[-29,-9],[-18,11],[-9,-9],[-2,15],[4,-16],[24,12],[33,-11]]}
+  ];
+  for(const {variant,positions} of extraTrees){
+    positions.forEach(([x,z],i)=>forest.push({x,z,height:3.3+(i%4)*.45,variant}));
+  }
   function loadTrees(url,variant){
     new GLTFLoader().load(url,({scene:model})=>{
       if(variant===2){
@@ -301,8 +308,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           const map=new T.CanvasTexture(foliage);
           map.colorSpace=T.SRGBColorSpace;
           map.flipY=original.flipY;
+          map.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
           leaves.material=new T.MeshStandardMaterial({
-            color:0x73947b,map,alphaTest:.42,side:T.DoubleSide,roughness:1
+            color:0x73947b,map,alphaTest:.12,side:T.DoubleSide,roughness:1
           });
         }
       }
