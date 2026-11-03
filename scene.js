@@ -271,7 +271,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, bumpMap:map===stone ? stone : null, bumpScale:.055, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, bumpMap:map===current ? null : map || null, bumpScale:map===stone ? .055 : .028, roughness:map===current ? .38 : .94, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
     let geometry=shape;
     if(tileSize && shape===box){
@@ -822,6 +822,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
 
   });
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
+  const bowGeometry=new T.TubeGeometry(new T.CatmullRomCurve3([
+    new T.Vector3(0,-.57,.16),new T.Vector3(0,-.31,-.05),
+    new T.Vector3(0,0,-.15),new T.Vector3(0,.31,-.05),new T.Vector3(0,.57,.16)
+  ]),12,.033,5,false);
+  const bowMaterial=new T.MeshStandardMaterial({color:0x634333,roughness:.83});
+  const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
   function updateTower(g,t){
     const {disc,mark}=g.userData;
     const customModel = t?.kind===2 ? sniperModel : t?.kind===0 ? gargoyleModel : undefined;
@@ -839,7 +845,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
           figure.rotation.y=facing+(t.kind===2?Math.PI:0);
           g.add(figure);
-          if(t.kind===2) g.userData.figure=figure;
+          if(t.kind===2){
+            g.userData.figure=figure;
+            const bow=new T.Group();
+            bow.position.set(.38,1.16,-.44);
+            figure.add(bow);
+            bow.add(new T.Mesh(bowGeometry,bowMaterial));
+            const stringGeometry=new T.BufferGeometry().setFromPoints([
+              new T.Vector3(0,-.57,.16),new T.Vector3(0,0,.16),new T.Vector3(0,.57,.16)
+            ]);
+            bow.add(new T.Line(stringGeometry,bowStringMaterial));
+            figure.userData.bowString=stringGeometry.attributes.position;
+            figure.userData.bow=bow;
+          }
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
@@ -922,6 +940,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       // The imported model faces local -Z.
       const turn=facing+Math.PI-figure.rotation.y;
       figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
+      const pull=elapsed<.16 ? .28*Math.exp(-elapsed*30) : 0;
+      figure.userData.bowString.setZ(1,.16+pull);
+      figure.userData.bowString.needsUpdate=true;
+      figure.userData.bow.rotation.x=-recoil*.28;
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
       figure.position.y=.16+recoil*.13;
