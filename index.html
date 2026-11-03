@@ -1,7 +1,7 @@
 <!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fortaleza Rubra</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#080b14;color:#ede6ed;font:16px system-ui}main{max-width:1000px;margin:auto;padding:24px}h1{font:clamp(36px,8vw,70px) Georgia;margin:4px 0 14px}small{color:#ff879b;letter-spacing:.24em}header,p{color:#b9c4d9}canvas{width:100%;aspect-ratio:900/430;display:block;border:1px solid #39445c;border-radius:12px;margin:14px 0;touch-action:manipulation}button{background:#151d30;border:1px solid #56627b;color:white;padding:12px;border-radius:8px;cursor:pointer;margin:3px}button[aria-pressed=true],#go{background:#801e3b}button:disabled{opacity:.45;cursor:default}#hud{font-weight:bold;color:#ff9cad}
-</style><main><header><small>TORRE DE DEFESA · PROTÓTIPO 3D</small><h1>Fortaleza Rubra</h1><p>A Ponte da Cripta · Proteja o coração do clã durante cinco ondas.</p></header><div id="hud"></div><canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta"></canvas><div id="shop"></div><div id="slots"></div><button id="go">Iniciar onda</button><button id="reset">Recomeçar</button><p id="msg" aria-live="polite"></p></main>
+</style><main><header><small>TORRE DE DEFESA · PROTÓTIPO 3D</small><h1>Fortaleza Rubra</h1><p>A Ponte da Cripta · Proteja o coração do clã durante cinco ondas.</p></header><div id="hud"></div><canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta"></canvas><div role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div><div id="shop"></div><div id="slots"></div><button id="go">Iniciar onda</button><button id="reset">Recomeçar</button><p id="msg" aria-live="polite"></p></main>
 <script type="module">
 import {createScene} from "./scene.js";
 const $=id=>document.getElementById(id);
@@ -61,6 +61,6 @@ function tick(dt){
  mobs=mobs.filter(m=>{if(m.health>0)return true;blood+=foes[m.k][3];refresh();return false});
  if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();say(done?'Vitória! A cripta resistiu às cinco ondas.':'Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
 }
-const draw = createScene($('map'), path, pads, build);
+const draw = createScene($('map'), path, pads, build, $('zoom-in'), $('zoom-out'));
 reset();let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 </script>

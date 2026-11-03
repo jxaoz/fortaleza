@@ -1,6 +1,6 @@
 import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
 
-export function createScene(canvas, path, pads, build) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
@@ -9,6 +9,20 @@ export function createScene(canvas, path, pads, build) {
   const camera = new T.PerspectiveCamera(38, 900/430, .1, 250);
   camera.position.set(3, 66, 65);
   camera.lookAt(0, 0, 0);
+
+  function zoomBy(factor) {
+    camera.zoom = T.MathUtils.clamp(camera.zoom * factor, .75, 2.25);
+    camera.updateProjectionMatrix();
+    zoomIn.disabled = camera.zoom >= 2.25;
+    zoomOut.disabled = camera.zoom <= .75;
+  }
+  zoomIn.onclick = () => zoomBy(1.15);
+  zoomOut.onclick = () => zoomBy(1 / 1.15);
+  canvas.addEventListener('wheel', event => {
+    if (!event.deltaY) return;
+    event.preventDefault();
+    zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
+  }, {passive: false});
   scene.add(new T.HemisphereLight(0xdceaff, 0x968199, 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, 2.6);
   moon.position.set(-15, 32, -15);
