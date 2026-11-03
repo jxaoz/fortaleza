@@ -295,7 +295,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         const instance=rooted.clone(true);
         instance.position.set(x,-.05,z);
         instance.rotation.y=i*2.4;
-        instance.scale.setScalar(targetHeight/height);
+        const sizeFactor=variant===0?.8:1.2;
+        instance.scale.setScalar(targetHeight*sizeFactor/height);
         scene.add(instance);
       });
     },undefined,error=>console.warn('Falha ao carregar a árvore.',error));
