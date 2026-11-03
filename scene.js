@@ -1035,6 +1035,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   let trollModel;
   new GLTFLoader().load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
+    for(const name of ['Goblins_Sword','Goblins_Shield']){
+      model.getObjectByName(name)?.removeFromParent();
+    }
     const bounds=new T.Box3().setFromObject(model);
     const center=bounds.getCenter(new T.Vector3());
     const height=bounds.getSize(new T.Vector3()).y;
