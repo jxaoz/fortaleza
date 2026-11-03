@@ -341,12 +341,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     scene.add(cave);
   },undefined,error=>console.warn('Falha ao carregar a caverna.',error));
   const portal=new T.Group();
-  portal.position.set(entrance.x+.25,1.27,entrance.z);
+  portal.position.set(entrance.x-.13,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
   portal.scale.set(2.55,1.62,1);
   portal.position.y=1.53;
   scene.add(portal);
   const vortex=new T.ShaderMaterial({
+    transparent:true,
     side:T.DoubleSide,
     uniforms:{time:{value:0}},
     vertexShader:'varying vec2 vUv; void main(){vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}',
@@ -361,19 +362,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       '  float spiral=pow(0.5+0.5*cos(phase),13.0);',
       '  float bands=smoothstep(0.34,0.52,r)*(1.0-smoothstep(0.88,1.0,r));',
       '  float ring=exp(-90.0*abs(r-0.53-0.02*sin(angle*3.0-time)));',
-      '  float edge=exp(-55.0*abs(r-0.94));',
       '  vec3 color=vec3(0.035,0.008,0.058);',
       '  color+=vec3(0.56,0.035,0.67)*spiral*bands;',
       '  color+=vec3(0.95,0.21,0.57)*ring*(0.65+0.35*cos(angle-time*2.0));',
-      '  color+=vec3(0.24,0.04,0.38)*edge;',
-      '  gl_FragColor=vec4(color,1.0);',
+      '  gl_FragColor=vec4(color,1.0-smoothstep(0.83,1.0,r));',
       '  #include <colorspace_fragment>',
       '}'
     ].join('\n')
   });
   portal.add(new T.Mesh(new T.CircleGeometry(1,64),vortex));
   const portalLight=new T.PointLight(0x792bd0,5,4);
-  portalLight.position.set(entrance.x+.6,1.3,entrance.z);
+  portalLight.position.set(entrance.x+.22,1.3,entrance.z);
   scene.add(portalLight);
   const wallX=bankRight+.24;
   for(const [start,end] of [[-18.5,bridgeZ-1.55],[bridgeZ+1.55,18.5]]){
