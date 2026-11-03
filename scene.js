@@ -152,6 +152,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const customModel = t?.kind===2 ? sniperModel : undefined;
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
+      g.userData.figure=undefined;
       g.userData.model=customModel;
       g.userData.level=t?.level??0;g.userData.kind=t?.kind;
       if(t){
@@ -161,6 +162,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           const figure=customModel.clone(true);
           figure.position.y=.16;
           g.add(figure);
+          g.userData.figure=figure;
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
@@ -199,6 +201,30 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       const g=actors.get(m), target=road[m.seg];
       g.position.copy(pos(m.x,m.y,Math.sin(performance.now()/(m.k===1?115:65)+m.x)*.12+.1));
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
+    }
+    const now=performance.now();
+    for(const shot of shots){
+      if(beams.has(shot)) continue;
+      const spot=spots.find(g=>{
+        const [x,y]=pads[g.userData.i];
+        return x===shot.x&&y===shot.y;
+      });
+      if(!spot?.userData.figure) continue;
+      spot.userData.castAt=now;
+      spot.userData.aim=Math.atan2(shot.a-shot.x,shot.b-shot.y);
+    }
+    for(const spot of spots){
+      const {figure,aim,castAt,i}=spot.userData;
+      if(!figure) continue;
+      const elapsed=(now-(castAt??-1000))/1000;
+      const recoil=elapsed<.42 ? Math.sin(Math.PI*Math.min(elapsed/.13,1)/2)*Math.max(0,1-elapsed/.42) : 0;
+      if(aim!==undefined){
+        const turn=aim-figure.rotation.y;
+        figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
+      }
+      figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
+      figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
+      figure.position.y=.16+recoil*.13;
     }
     const visible=new Set(shots);
     for(const [s,b] of beams)if(!visible.has(s)){
