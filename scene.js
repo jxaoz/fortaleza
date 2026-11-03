@@ -785,7 +785,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           outermost=side*x;
           tip.set(x,y,(positions.getZ(i)-center.z)*scale);
         }
-        return tip;
+        const palm=new T.Vector3();
+        let samples=0;
+        for(let i=0;i<positions.count;i++){
+          const x=(positions.getX(i)-center.x)*scale;
+          const y=(positions.getY(i)-bounds.min.y)*scale;
+          if(side*x<outermost-.14||Math.abs(y-tip.y)>.13) continue;
+          palm.x+=x;
+          palm.y+=y;
+          palm.z+=(positions.getZ(i)-center.z)*scale;
+          samples++;
+        }
+        return samples ? palm.divideScalar(samples) : tip;
       });
       const grip=new Float32Array(positions.count*3);
       const draw=new Float32Array(positions.count*3);
@@ -794,14 +805,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         const y=(positions.getY(i)-bounds.min.y)*scale;
         const side=x<0?0:1;
         const hand=hands[side];
-        const weight=T.MathUtils.smoothstep(Math.abs(x),.36,Math.max(.45,Math.abs(hand.x)-.1))*
+        const weight=T.MathUtils.smoothstep(Math.abs(x),.36,Math.max(.45,Math.abs(hand.x)-.17))*
           T.MathUtils.smoothstep(y,.48,.78)*(1-T.MathUtils.smoothstep(y,1.72,2.05));
-        const targetX=.38;
-        const targetZ=side===1?-.59:-.28;
+        const targetX=.15;
+        const targetZ=side===1?-.51:-.20;
         grip[i*3]=(targetX-hand.x)*weight/scale;
-        grip[i*3+1]=(1.16-hand.y)*weight/scale;
+        grip[i*3+1]=(1.26-hand.y)*weight/scale;
         grip[i*3+2]=(targetZ-hand.z)*weight/scale;
-        if(side===0) draw[i*3+2]=.28*weight/scale;
+        if(side===0) draw[i*3+2]= .17*weight/scale;
       }
       merged.morphTargetsRelative=true;
       merged.morphAttributes.position=[
@@ -923,7 +934,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           if(t.kind===2){
             g.userData.figure=figure;
             const bow=new T.Group();
-            bow.position.set(.38,1.16,-.44);
+            bow.position.set(.15,1.26,-.36);
             figure.add(bow);
             bow.add(new T.Mesh(bowGeometry,bowMaterial));
             const stringGeometry=new T.BufferGeometry().setFromPoints([
@@ -1018,11 +1029,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       // The imported model faces local -Z.
       const turn=facing+Math.PI-figure.rotation.y;
       figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
-      const pull=elapsed<.16 ? .28*Math.exp(-elapsed*30) : 0;
+      const pull=elapsed<.16 ? .17*Math.exp(-elapsed*30) : 0;
       figure.userData.bowString.setZ(1,.16+pull);
       figure.userData.bowString.needsUpdate=true;
       for(const part of figure.userData.armMeshes){
-        part.morphTargetInfluences[1]=pull/.28;
+        part.morphTargetInfluences[1]=pull/.17;
       }
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
