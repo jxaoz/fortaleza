@@ -299,7 +299,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   roof.rotation.y=.18;
   mesh(scene,ball,0x454d60,entrance.x-2.62,3.32,entrance.z+.58,1.75,1.55,2.23);
   const portal=new T.Group();
-  portal.position.set(entrance.x-1.55,1.27,entrance.z);
+  portal.position.set(entrance.x+.25,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
   portal.scale.set(1.05,1.12,1);
   scene.add(portal);
@@ -313,7 +313,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   portalRim.position.z=.012;
   portal.add(portalRim);
   const portalLight=new T.PointLight(0x792bd0,5,4);
-  portalLight.position.set(entrance.x-1.2,1.3,entrance.z);
+  portalLight.position.set(entrance.x+.6,1.3,entrance.z);
   scene.add(portalLight);
   const gate=pos(...path.at(-1));
   const wingShape=new T.Shape();
