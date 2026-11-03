@@ -729,18 +729,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let alchemistModel;
-  new GLTFLoader().load(new URL('./assets/alquimista.glb', import.meta.url).href,({scene:model})=>{
-    const bounds=new T.Box3().setFromObject(model);
-    const size=bounds.getSize(new T.Vector3());
+  new STLLoader().load(new URL('./assets/alquimista.stl', import.meta.url).href,geometry=>{
+    geometry.computeBoundingBox();
+    const bounds=geometry.boundingBox;
     const center=bounds.getCenter(new T.Vector3());
-    const scale=2.45/Math.max(size.x,size.y,size.z);
-    if(!Number.isFinite(scale)||scale<=0) return;
-    const fitted=new T.Group();
-    fitted.add(model);
-    fitted.scale.setScalar(scale);
-    fitted.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
-    alchemistModel=new T.Group();
-    alchemistModel.add(fitted);
+    const height=bounds.getSize(new T.Vector3()).y;
+    if(!Number.isFinite(height)||height<=0) return;
+    geometry.translate(-center.x,-bounds.min.y,-center.z);
+    const scale=2.45/height;
+    geometry.scale(scale,scale,scale);
+    alchemistModel=new T.Mesh(geometry,new T.MeshStandardMaterial({
+      color:0x645371,roughness:.86
+    }));
   },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
