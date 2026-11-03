@@ -156,10 +156,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       g.userData.level=t?.level??0;g.userData.kind=t?.kind;
       if(t){
         const c=towerColors[t.kind], h=1.2+.3*t.level;
-        mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
+        if(!customModel) mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
         if(customModel){
           const figure=customModel.clone(true);
-          figure.position.y=h;
+          figure.position.y=.16;
           g.add(figure);
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
@@ -168,6 +168,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       }
     }
     mark.visible=!t;
+    disc.visible=!customModel||t.jam>0;
     disc.scale.y=t?.jam>0?.64:.35;
   }
   const actors=new Map(), beams=new Map();
