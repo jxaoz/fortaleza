@@ -463,6 +463,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     mesh(frame,box,0x58627b,0,-.045,.03,1.04,.12,.23);
   }
   const keepX=gate.x+8.2;
+  new GLTFLoader().load(new URL('./assets/torre-central.glb', import.meta.url).href,({scene:model})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const size=bounds.getSize(new T.Vector3());
+    const center=bounds.getCenter(new T.Vector3());
+    const scale=17/size.y;
+    if(!Number.isFinite(scale)||scale<=0) return;
+    const centralTower=new T.Group();
+    centralTower.scale.setScalar(scale);
+    centralTower.position.set(keepX-center.x*scale,-.05-bounds.min.y*scale,gate.z-center.z*scale);
+    centralTower.add(model);
+    scene.add(centralTower);
+  },undefined,error=>console.warn('Falha ao carregar a torre central.',error));
   mesh(scene,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
   mesh(scene,box,0x58627b,keepX,8.15,gate.z,8.9,.45,9.3);
   for(const side of [-1,1]){
