@@ -857,6 +857,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
             bow.add(new T.Line(stringGeometry,bowStringMaterial));
             figure.userData.bowString=stringGeometry.attributes.position;
             figure.userData.bow=bow;
+            const hands=[1,-1].map(side=>{
+              const hand=mesh(figure,ball,0xb69391,0,0,0,.105,.092,.09);
+              const sleeve=mesh(figure,cylinder,0x272333,0,0,0,.095,1,.095);
+              return {hand,sleeve,shoulder:new T.Vector3(side*.24,1.66,0)};
+            });
+            figure.userData.bowHands=hands;
           }
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
@@ -943,7 +949,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       const pull=elapsed<.16 ? .28*Math.exp(-elapsed*30) : 0;
       figure.userData.bowString.setZ(1,.16+pull);
       figure.userData.bowString.needsUpdate=true;
-      figure.userData.bow.rotation.x=-recoil*.28;
+      const bow=figure.userData.bow;
+      bow.rotation.x=-recoil*.28;
+      bow.updateMatrix();
+      figure.userData.bowHands.forEach(({hand,sleeve,shoulder},index)=>{
+        hand.position.set(0,0,index===0?-.15:.16+pull).applyMatrix4(bow.matrix);
+        sleeve.position.copy(shoulder).lerp(hand.position,.5);
+        const direction=hand.position.clone().sub(shoulder);
+        sleeve.scale.y=direction.length();
+        sleeve.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
+      });
       figure.rotation.x=Math.sin(now/570+i)*.022-recoil*.24;
       figure.scale.y=1+Math.sin(now/470+i)*.017+recoil*.07;
       figure.position.y=.16+recoil*.13;
