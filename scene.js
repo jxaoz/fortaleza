@@ -62,12 +62,88 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const cone = new T.ConeGeometry(1,1,5);
   const cylinder = new T.CylinderGeometry(1,1,1,12);
   const materials = new Map();
+  // Shared, repeatable patterns keep the scenery textured without extra downloads.
+  function pattern(base, grain, paint) {
+    const tile=document.createElement('canvas');
+    tile.width=tile.height=128;
+    const ctx=tile.getContext('2d');
+    let seed=741;
+    const random=()=>{
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      return seed/4294967296;
+    };
+    ctx.fillStyle=base;
+    ctx.fillRect(0,0,128,128);
+    if(paint) paint(ctx,random);
+    for(let i=0;i<3500;i++){
+      ctx.fillStyle=random()<.5?'#000':'#fff';
+      ctx.globalAlpha=random()*grain;
+      const size=1+random()*3;
+      ctx.fillRect(random()*128,random()*128,size,size);
+    }
+    const texture=new T.CanvasTexture(tile);
+    texture.colorSpace=T.SRGBColorSpace;
+    texture.wrapS=texture.wrapT=T.RepeatWrapping;
+    texture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
+    return texture;
+  }
+  const soil=pattern('#aaa8a0',.25,(ctx,random)=>{
+    for(let i=0;i<210;i++){
+      ctx.fillStyle=['#858578','#9b9c8c','#beb9ad'][i%3];
+      ctx.fillRect(random()*128,random()*128,2+random()*7,1+random()*4);
+    }
+  });
+  const masonry=(rows,columns)=>pattern('#545460',.19,(ctx,random)=>{
+    const w=128/columns,h=128/rows;
+    for(let row=0;row<rows;row++){
+      for(let col=-1;col<columns;col++){
+        const x=(col+(row%2)*.5)*w,y=row*h;
+        const light=57+random()*18;
+        ctx.fillStyle='hsl(225 8% '+light+'%)';
+        ctx.fillRect(x+1,y+1,w-2,h-2);
+        ctx.fillStyle='#c2c0c2';
+        ctx.fillRect(x+2,y+1,w-4,1);
+      }
+    }
+  });
+  const paving=masonry(5,5);
+  const stone=masonry(5,3);
+  const needles=pattern('#939d91',.24,(ctx,random)=>{
+    ctx.strokeStyle='#606f61';
+    ctx.beginPath();
+    for(let i=0;i<420;i++){
+      const x=random()*128,y=random()*128;
+      ctx.moveTo(x,y);
+      ctx.lineTo(x+(random()-.5)*10,y-3-random()*5);
+    }
+    ctx.stroke();
+  });
+  const bark=pattern('#a39a91',.22,(ctx,random)=>{
+    ctx.fillStyle='#665b54';
+    for(let i=0;i<23;i++) ctx.fillRect(random()*128,0,1+random()*3,128);
+  });
+  const surfaces=new Map([
+    [0x46546a,[soil,3]], [0x89869a,[paving,3]], [0x68758d,[stone,3]],
+    [0x58627b,[stone,3]], [0x454861,[stone,3]], [0x343a50,[stone,3]],
+    [0x5b6275,[stone,3]], [0x202c41,[needles]], [0x29374a,[needles]],
+    [0x514641,[bark]]
+  ]);
   function mesh(parent, shape, color, x,y,z, w,h,d, glow=false) {
+    const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
-    const m = new T.Mesh(shape,materials.get(key));
+    let geometry=shape;
+    if(tileSize && shape===box){
+      geometry=shape.clone();
+      const uv=geometry.attributes.uv;
+      const sizes=[[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+      sizes.forEach(([u,v],face)=>{
+        for(let i=face*4;i<face*4+4;i++) uv.setXY(i,uv.getX(i)*u/tileSize,uv.getY(i)*v/tileSize);
+      });
+    }
+    const m = new T.Mesh(geometry,materials.get(key));
     m.position.set(x,y,z); m.scale.set(w,h,d); parent.add(m);
     return m;
   }
@@ -97,7 +173,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   for(let i=0;i<44;i++){
     const x=(i*137%810)-405, z=i%2 ? -15-(i%3) : 14+(i%4);
     const h=2.8+(i*7%5)*.7;
-    mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2,z,1.1,h,1.2);
+    mesh(scene,cylinder,0x514641,x/10,.55,z,.18,1.1,.18);
+    mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2+.55,z,1.1,h,1.2);
   }
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
