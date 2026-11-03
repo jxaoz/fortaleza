@@ -295,7 +295,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         const instance=rooted.clone(true);
         instance.position.set(x,-.05,z);
         instance.rotation.y=i*2.4;
-        const sizeFactor=variant===0?.8:1.2;
+        const sizeFactor=variant===0 ? .8 : variant===1 ? 1.2 : 1;
         instance.scale.setScalar(targetHeight*sizeFactor/height);
         scene.add(instance);
       });
@@ -303,6 +303,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   loadTrees(new URL('./assets/arvore.glb', import.meta.url).href,0);
   loadTrees(new URL('./assets/arvore-seca.gltf', import.meta.url).href,1);
+  for(const [x,z,height] of [[-26,-13,4.7],[-13,-15,5.3],[2,-14,4.5],[20,-15,5],[29,14,4.8],[-19,15,4.6]]){
+    forest.push({x,z,height,variant:2});
+  }
+  loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
   let gargoyleModel;
   new STLLoader().load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
     geometry.rotateX(-Math.PI/2);
