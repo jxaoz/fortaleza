@@ -21,11 +21,10 @@ button:hover:not(:disabled){border-color:#ffb1a9;filter:brightness(1.2)}
 button:focus-visible{outline:2px solid #ffcf98;outline-offset:2px}
 button:disabled{opacity:.48;cursor:default}
 button[aria-pressed=true],#go{background:linear-gradient(#8e2a47,#4d162a);border-color:#d77985}
-#shop,#slots,.zoom,.actions{display:flex;gap:5px}
+#shop,.zoom,.actions{display:flex;gap:5px}
 #shop{margin:5px 0 7px}
 #shop button{display:grid;text-align:left;gap:2px;flex:1}
 #shop button small{letter-spacing:.02em;text-transform:none;color:#ffc1b1}
-#slots button{flex:1;min-width:0;padding:4px;min-height:28px;font-size:12px}
 .controls{display:grid;justify-items:end;gap:6px}
 .zoom button{min-width:36px;font-size:20px;padding:0 7px}
 #msg{margin:0;max-width:40ch;text-align:right;color:#fff3df;text-shadow:0 1px 4px #000,0 1px 8px #000;font-size:12px}
@@ -52,7 +51,7 @@ button[aria-pressed=true],#go{background:linear-gradient(#8e2a47,#4d162a);border
     </div>
     <div></div>
     <div class="bottom">
-      <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div><div id="slots" aria-label="Plataformas"></div></section>
+      <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div></section>
       <div class="controls">
         <p id="msg" aria-live="polite"></p>
         <div class="zoom" role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
@@ -72,24 +71,25 @@ const foes=[['Lobisomem',44,78,11,'#d1b8ff'],['Troll',180,37,24,'#91c99d'],['Ca�
 const waves=[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
 function say(s){$('msg').textContent=s}
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
-pads.forEach((_,i)=>{const b=document.createElement('button');b.onclick=()=>build(i);$('slots').append(b)});
+towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
 function refresh(){
  $('blood').textContent=blood;
  $('health').textContent=hp+'/12';
  $('wave').textContent=wave+'/5';
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
- [...$('slots').children].forEach((b,i)=>{b.textContent=placed[i]?(i+1)+' · N'+placed[i].level:i+1;b.disabled=done});
 }
-function reset(){blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Selecione uma defesa e clique em uma posição numerada. Torres já construídas podem subir até o nível 3.')}
-function build(i){
+function reset(){blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Arraste uma defesa para uma plataforma livre ou selecione e clique no mapa. Torres já construídas podem subir até o nível 3.')}
+function build(i,droppedKind){
+ const kind=droppedKind??selected;
  if(done)return;
- const t=placed[i],cost=t?Math.ceil(towers[t.kind][1]*.65*t.level):towers[selected][1];
+ const t=placed[i];
+ if(t&&droppedKind!==undefined){say('Arraste a defesa para uma plataforma livre.');return;}
+ const cost=t?Math.ceil(towers[t.kind][1]*.65*t.level):towers[kind][1];
  if(t?.level===3)return say('Esta torre já está no nível máximo.');
  if(blood<cost)return say('Você precisa de '+cost+' de sangue.');
  blood-=cost;
- if(t)t.level++;else placed[i]={kind:selected,level:1,cool:0,jam:0};
+ if(t)t.level++;else placed[i]={kind,level:1,cool:0,jam:0};
  say(t?'Torre melhorada.':'Defesa construída.');refresh();
 }
 $('reset').onclick=reset;

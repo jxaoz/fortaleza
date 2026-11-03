@@ -344,12 +344,30 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       ignoreClick=false;
       return;
     }
+    const i=platformAt(event);
+    if(i!==undefined) build(i);
+  };
+  function platformAt(event){
     const r=canvas.getBoundingClientRect();
     pointer.set((event.clientX-r.left)/r.width*2-1,1-(event.clientY-r.top)/r.height*2);
     ray.setFromCamera(pointer,camera);
     const hit=ray.intersectObjects(pickTargets,false)[0];
-    if(hit) build(hit.object.parent.userData.i);
-  };
+    return hit?.object.parent.userData.i;
+  }
+  const defenseType='application/x-fortaleza-defense';
+  canvas.addEventListener('dragover',event=>{
+    if(!event.dataTransfer.types.includes(defenseType)) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect=platformAt(event)===undefined?'none':'copy';
+  });
+  canvas.addEventListener('drop',event=>{
+    const data=event.dataTransfer.getData(defenseType);
+    if(!/^[0-2]$/.test(data)) return;
+    event.preventDefault();
+    const i=platformAt(event);
+    if(i!==undefined) build(i,Number(data));
+
+  });
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
   function updateTower(g,t){
     const {disc,mark}=g.userData;
