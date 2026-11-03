@@ -1,4 +1,5 @@
-import * as T from 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
+import * as T from 'three';
+import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 
 export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
@@ -96,6 +97,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const h=2.8+(i*7%5)*.7;
     mesh(scene,cone,i%2?0x202c41:0x29374a,x/10,h/2,z,1.1,h,1.2);
   }
+  let sniperModel;
+  new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
+    const bounds = new T.Box3().setFromObject(model);
+    const size = bounds.getSize(new T.Vector3());
+    const extent = Math.max(size.x, size.y, size.z);
+    if (!Number.isFinite(extent) || extent <= 0) return;
+    const center = bounds.getCenter(new T.Vector3());
+    const scale = 2.6 / extent;
+    sniperModel = new T.Group();
+    const fitted = new T.Group();
+    fitted.add(model);
+    fitted.scale.setScalar(scale);
+    fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+    sniperModel.add(fitted);
+  }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     scene.add(g);g.position.copy(p);
@@ -109,19 +125,31 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     pointer.set((event.clientX-r.left)/r.width*2-1,1-(event.clientY-r.top)/r.height*2);
     ray.setFromCamera(pointer,camera);
     const hit=ray.intersectObjects(spots,true)[0];
-    if(hit) build(hit.object.parent.userData.i);
+    if(hit){
+      let spot=hit.object;
+      while(!spots.includes(spot)) spot=spot.parent;
+      build(spot.userData.i);
+    }
   };
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
   function updateTower(g,t){
     const {disc,mark}=g.userData;
-    if(g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
+    const customModel = t?.kind===2 ? sniperModel : undefined;
+    if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
+      g.userData.model=customModel;
       g.userData.level=t?.level??0;g.userData.kind=t?.kind;
       if(t){
         const c=towerColors[t.kind], h=1.2+.3*t.level;
         mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
-        mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
-        if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
+        if(customModel){
+          const figure=customModel.clone(true);
+          figure.position.y=h;
+          g.add(figure);
+        }else{
+          mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
+          if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
+        }
       }
     }
     mark.visible=!t;
