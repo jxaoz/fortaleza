@@ -189,7 +189,41 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       ctx.stroke();
     }
   });
-  const groundTexture=new T.TextureLoader().load(new URL('./assets/grass-ground.jpg', import.meta.url).href);
+  const grassTile=document.createElement('canvas');
+  grassTile.width=grassTile.height=256;
+  const grassPaint=grassTile.getContext('2d');
+  const groundTexture=new T.CanvasTexture(grassTile);
+  function paintGrass(image){
+    grassPaint.fillStyle='#273b29';
+    grassPaint.fillRect(0,0,256,256);
+    if(image){
+      grassPaint.globalAlpha=.24;
+      grassPaint.drawImage(image,0,0,256,256);
+      grassPaint.globalAlpha=1;
+    }
+    let seed=86;
+    const sample=()=>{
+      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+      return seed/4294967296;
+    };
+    const greens=['#192c20','#29432b','#355237','#496445'];
+    for(const color of greens){
+      grassPaint.strokeStyle=color;
+      grassPaint.beginPath();
+      for(let i=0;i<850;i++){
+        const x=sample()*256,y=sample()*256;
+        grassPaint.moveTo(x,y);
+        grassPaint.lineTo(x+(sample()-.5)*5,y-2-sample()*6);
+      }
+      grassPaint.stroke();
+    }
+    groundTexture.needsUpdate=true;
+  }
+  paintGrass();
+  new T.TextureLoader().load(new URL('./assets/grass-ground.jpg', import.meta.url).href, texture=>{
+    paintGrass(texture.image);
+    texture.dispose();
+  });
   groundTexture.colorSpace=T.SRGBColorSpace;
   groundTexture.wrapS=groundTexture.wrapT=T.RepeatWrapping;
   groundTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
@@ -206,7 +240,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color:color===0x46546a ? 0x9ba98d : color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
     let geometry=shape;
     if(tileSize && shape===box){
