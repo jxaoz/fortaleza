@@ -745,10 +745,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     const skin=new T.Color(0xe1c8c2), gold=new T.Color(0xd49b38);
     const ember=new T.Color(0xd62608), flame=new T.Color(0xffdf71);
     const color=new T.Color();
-    for(let i=0;i<vertices.count;i+=3){
-      const x=(vertices.getX(i)+vertices.getX(i+1)+vertices.getX(i+2))/3;
-      const y=(vertices.getY(i)+vertices.getY(i+1)+vertices.getY(i+2))/3;
-      const z=(vertices.getZ(i)+vertices.getZ(i+1)+vertices.getZ(i+2))/3;
+    const finish=new Float32Array(vertices.count*2);
+    for(let i=0;i<vertices.count;i++){
+      const x=vertices.getX(i);
+      const y=vertices.getY(i);
+      const z=vertices.getZ(i);
       const u=x/(size.x*scale)+.5, v=y/2.45;
       const shaft=.41-.31*v;
       const weapon=(Math.abs(u-shaft)<.033)||(v>.74&&u<.29);
@@ -764,12 +765,22 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         color.copy(weapon?gold:face?skin:trim?red:cloth);
         color.multiplyScalar(1+grain*(face?.07:.16));
       }
-      for(let j=i;j<i+3;j++) color.toArray(colors,j*3);
+      color.toArray(colors,i*3);
+      finish[i*2]=weapon&&!fire ? 1 : 0;
+      finish[i*2+1]=fire ? .65+.35*Math.sin(y*11+x*15) : 0;
     }
     geometry.setAttribute('color',new T.BufferAttribute(colors,3));
-    alchemistModel=new T.Mesh(geometry,new T.MeshStandardMaterial({
-      vertexColors:true,roughness:.86
-    }));
+    geometry.setAttribute('surfaceFinish',new T.BufferAttribute(finish,2));
+    const material=new T.MeshStandardMaterial({vertexColors:true,roughness:.82});
+    material.onBeforeCompile=shader=>{
+      shader.vertexShader='attribute vec2 surfaceFinish; varying vec2 vFinish;\n'+shader.vertexShader
+        .replace('#include <begin_vertex>','#include <begin_vertex>\nvFinish = surfaceFinish;');
+      shader.fragmentShader='varying vec2 vFinish;\n'+shader.fragmentShader
+        .replace('#include <roughnessmap_fragment>','#include <roughnessmap_fragment>\nroughnessFactor = mix(roughnessFactor, 0.28, vFinish.x);')
+        .replace('#include <metalnessmap_fragment>','#include <metalnessmap_fragment>\nmetalnessFactor = mix(metalnessFactor, 0.48, vFinish.x);')
+        .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * vFinish.y * 1.5;');
+    };
+    alchemistModel=new T.Mesh(geometry,material);
   },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
   new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
