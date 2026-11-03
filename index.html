@@ -103,7 +103,7 @@ button[aria-pressed=true],#go{
 import {createScene} from "./scene.js";
 const $=id=>document.getElementById(id);
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
-const pads=[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[654,337],[681,214],[755,328]];
+const pads=[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337],[606,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
 const foes=[['Lobisomem',44,78,11,'#d1b8ff'],['Troll',180,37,24,'#91c99d'],['Caçador',82,61,17,'#ffc986'],['Feiticeiro',510,31,65,'#f269a5']];
 const waves=[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
@@ -149,7 +149,8 @@ function tick(dt){
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;
   const [, ,range,delay,damage,color]=towers[t.kind],[x,y]=pads[i];
-  const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<range).reverse();
+  const effectiveRange=(i===6||i===7)?range*1.25:range;
+  const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<effectiveRange).reverse();
   if(!targets.length)return;
   for(const m of (t.kind===1?targets:targets.slice(0,1))){
    const shield=mobs.some(w=>w!==m&&w.k===3&&w.health>0&&Math.hypot(m.x-w.x,m.y-w.y)<105);

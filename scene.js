@@ -673,14 +673,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     if(i===6||i===7){
-      mesh(scene,box,0x68758d,p.x,1.05,p.z,3.8,2.2,3.8);
-      mesh(scene,box,0x58627b,p.x,2.17,p.z,4.1,.24,4.1);
+      mesh(scene,box,0x68758d,p.x,.72,p.z,3.8,4.54,3.8);
+      mesh(scene,box,0x58627b,p.x,3.11,p.z,4.1,.24,4.1);
       for(const dx of [-1.72,1.72]){
         for(const dz of [-1.72,1.72]){
-          mesh(scene,box,0x58627b,p.x+dx,2.53,p.z+dz,.62,.52,.62);
+          mesh(scene,box,0x58627b,p.x+dx,3.47,p.z+dz,.62,.52,.62);
         }
       }
-      p.y=2.29;
+      p.y=3.23;
     }
     scene.add(g);g.position.copy(p);
     const disc=mesh(g,cylinder,0x829bb7,0,.14,0,1.65,.35,1.65);
