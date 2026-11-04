@@ -139,7 +139,7 @@ button[aria-pressed=true],#go{
       <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div></section>
       <div class="controls">
 
-        <div class="zoom" role="group" aria-label="Câmera do mapa"><button id="rotate-left" aria-label="Girar mapa à esquerda">↶</button><button id="rotate-right" aria-label="Girar mapa à direita">↷</button><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
+        <div class="zoom" role="group" aria-label="Câmera do mapa"><button id="fullscreen" type="button" aria-label="Entrar em tela cheia" title="Tela cheia">⛶</button><button id="rotate-left" aria-label="Girar mapa à esquerda">↶</button><button id="rotate-right" aria-label="Girar mapa à direita">↷</button><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
         <div class="actions"><button id="pause" type="button" aria-pressed="false">Pausar</button><button id="speed" type="button" aria-label="Velocidade atual 1×. Clique para alternar">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
@@ -169,6 +169,22 @@ button[aria-pressed=true],#go{
 import * as T from 'three';
 import {createScene} from "./scene.js?v=marble-blood-pillar";
 const $=id=>document.getElementById(id);
+const fullscreenButton=$('fullscreen');
+fullscreenButton.hidden=!document.fullscreenEnabled;
+fullscreenButton.onclick=async()=>{
+ try{
+  if(document.fullscreenElement)await document.exitFullscreen();
+  else await document.documentElement.requestFullscreen();
+ }catch{
+  say('O navegador não conseguiu mudar para tela cheia.');
+ }
+};
+document.addEventListener('fullscreenchange',()=>{
+ const label=document.fullscreenElement?'Sair da tela cheia':'Entrar em tela cheia';
+ fullscreenButton.setAttribute('aria-label',label);
+ fullscreenButton.title=label;
+});
+
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
 import {dungeonRoutes,dungeonPads,dungeonWaves,dungeonGiantHealth} from "./dungeon.js?v=dungeon-eight-waves";
 const phaseParams=new URLSearchParams(location.search);
