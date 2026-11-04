@@ -135,7 +135,7 @@ const $=id=>document.getElementById(id);
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
 const pads=[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337],[606,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
-const foes=[['Lobisomem',44,78,11,'#d1b8ff'],['Troll',180,37,24,'#91c99d'],['Caçador',82,61,17,'#ffc986'],['Feiticeiro',510,31,65,'#f269a5']];
+const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Feiticeiro',510,31,50,'#f269a5']];
 const waves=[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let selectedDefense;
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
@@ -202,7 +202,7 @@ function tick(dt){
  for(const m of mobs){
   m.slow-=dt;const [x,y]=path[m.seg],d=Math.hypot(x-m.x,y-m.y);
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;
-  if(d<=speed){m.x=x;m.y=y;if(++m.seg===path.length){m.escaped=true;hp=Math.max(0,hp-(m.k===3?4:1));refresh()}}
+  if(d<=speed){m.x=x;m.y=y;if(++m.seg===path.length){m.escaped=true;hp=Math.max(0,hp-(m.k===3?5:2));refresh()}}
   else{m.x+=(x-m.x)*speed/d;m.y+=(y-m.y)*speed/d}
   if(m.k===2&&!m.flash){const i=pads.findIndex(([a,b],i)=>placed[i]&&Math.hypot(a-m.x,b-m.y)<87);if(i>=0){placed[i].jam=2.8;m.flash=true;say('Um caçador lançou uma granada de luz na torre '+(i+1)+'.')}}
  }
