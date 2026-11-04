@@ -167,7 +167,7 @@ button[aria-pressed=true],#go{
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as T from 'three';
-import {createScene} from "./scene.js?v=blood-pillar";
+import {createScene} from "./scene.js?v=marble-blood-pillar";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
 import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js?v=dungeon-pads";
@@ -216,7 +216,7 @@ const pads=dungeon?dungeonPads:cathedral?cathedralPads:[[100,247],[205,366],[286
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
 if(cathedral||dungeon)towers.push(['Drácula',105,155,1.85,39,'#e82b55']);
 const bloodPillarKind=4;
-const bloodInterval=12;
+const bloodInterval=1;
 towers[bloodPillarKind]=['Pilar de Sangue',65,0,bloodInterval,0,'#ff375e'];
 const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Bruxa',510,31,50,'#f269a5'],['Gigante',2500,27,70,'#e89863']];
 const waves=dungeon?dungeonWaves:cathedral?cathedralWaves:[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
@@ -244,7 +244,7 @@ const defenseBios=[
  'Necromante do clã. Invoca dois lacaios de sangue que perseguem o mesmo alvo.'
 ];
 defenseBios[bloodPillarKind]='Gera sangue durante as ondas. Cada melhoria aumenta a produção.';
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');b.dataset.kind=i;b.dataset.bio=defenseBios[i];b.setAttribute('aria-description',defenseBios[i]);const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
+[0,1,bloodPillarKind,2,3].filter(i=>towers[i]).forEach(i=>{const [name,cost]=towers[i];const b=document.createElement('button');b.dataset.kind=i;b.dataset.bio=defenseBios[i];b.setAttribute('aria-description',defenseBios[i]);const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
 function defenseDamage(kind,level){
  return towers[kind][4]*(1+.55*(level-1));
 }
@@ -288,7 +288,7 @@ function positionTowerUpgrade(i,point,rect){
  const formatDamage=value=>value.toLocaleString('pt-BR',{maximumFractionDigits:2});
  const preview=defense.level===3?'Nível máximo':[
   'Nível '+defense.level+' → '+(defense.level+1),
-  ...(defense.kind===bloodPillarKind?['Sangue a cada '+bloodInterval+' s · '+(defense.level+2)+' → '+(defense.level+3)]:[
+  ...(defense.kind===bloodPillarKind?['Sangue a cada '+bloodInterval+' s · '+defense.level+' → '+(defense.level+1)]:[
   'Dano por '+(defense.kind===3?'invocação':'acerto')+' · '+
    formatDamage(defenseDamage(defense.kind,defense.level))+' → '+
    formatDamage(defenseDamage(defense.kind,defense.level+1)),
@@ -414,8 +414,8 @@ function tick(dt){
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;
   if(t.kind===bloodPillarKind){
-   blood+=t.level+2;
-   t.cool=bloodInterval;
+   blood+=t.level;
+   t.cool+=bloodInterval;
    refresh();
    return;
   }

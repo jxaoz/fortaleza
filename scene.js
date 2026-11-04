@@ -1806,6 +1806,28 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     }
   }
   }
+  const bloodMarble=pattern('#66162f',.12,(ctx,random)=>{
+    for(let vein=0;vein<16;vein++){
+      const offset=random()*170-20;
+      ctx.strokeStyle=vein%3===0?'#ef899d88':'#290e26aa';
+      ctx.lineWidth=.6+random()*2.2;
+      ctx.beginPath();
+      ctx.moveTo(0,offset);
+      ctx.bezierCurveTo(35,offset+26,75,offset-32,128,offset-12);
+      ctx.stroke();
+    }
+  });
+  surfaces.set(0x282334,[stone,1]);
+  surfaces.set(0x65273e,[bloodMarble,1]);
+  const bloodVortex=vortex.clone();
+  bloodVortex.uniforms.time=vortex.uniforms.time;
+  bloodVortex.depthWrite=false;
+  bloodVortex.blending=T.AdditiveBlending;
+  bloodVortex.fragmentShader=vortex.fragmentShader
+    .replace('vec3(0.035,0.008,0.058)','vec3(0.0)')
+    .replace('vec3(0.56,0.035,0.67)','vec3(0.72,0.02,0.10)')
+    .replace('vec3(0.95,0.21,0.57)','vec3(1.0,0.25,0.36)');
+  const bloodVortexDisc=new T.CircleGeometry(.95,32);
   function updateTower(g,t){
     const {disc,mark}=g.userData;
     const customModel = [gargoyleModel,alchemistModel,sniperModel,draculaModel][t?.kind];
@@ -1842,9 +1864,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
           }
         }else if(t.kind===4){
           mesh(g,cylinder,0x282334,0,.17,0,1,.34,1);
-          mesh(g,cylinder,0x39283e,0,h/2,0,.56,h,.56);
+          mesh(g,cylinder,0x282334,0,h/2,0,.56,h,.56);
+          mesh(g,cylinder,0x65273e,0,.38,0,.76,.15,.76);
+          mesh(g,cylinder,0x65273e,0,h*.58,0,.61,.12,.61);
+          mesh(g,cylinder,0x282334,0,h-.17,0,.72,.18,.72);
           mesh(g,cylinder,0x65273e,0,h,0,.87,.22,.87);
           const orb=mesh(g,ball,0xff224e,0,h+.64,0,.62,.62,.62,true);
+          const swirl=new T.Mesh(bloodVortexDisc,bloodVortex);
+          swirl.rotation.x=-Math.PI/3;
+          orb.add(swirl);
+          swirl.scale.setScalar(1/.62);
           g.userData.bloodOrb=orb;
           orb.userData.restHeight=orb.position.y;
         }else if(t.kind===3){
