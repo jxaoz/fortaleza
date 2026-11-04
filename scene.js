@@ -1067,10 +1067,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     witchWalk=animations.find(clip=>clip.name==='walk-loop');
     witchModel=fitted;
   },undefined,error=>console.warn('Falha ao carregar o Bruxa.',error));
-  let trollModel;
-  new GLTFLoader(loadingManager).load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
-    for(const name of ['Goblins_Sword','Goblins_Shield']){
-      model.getObjectByName(name)?.removeFromParent();
+  const walkingModels=[];
+  function loadWalker(url,kind,targetHeight){
+    new GLTFLoader(loadingManager).load(url,({scene:model})=>{
+    if(kind===1){
+      for(const name of ['Goblins_Sword','Goblins_Shield'])model.getObjectByName(name)?.removeFromParent();
     }
     const bounds=new T.Box3().setFromObject(model);
     const center=bounds.getCenter(new T.Vector3());
@@ -1102,12 +1103,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       geometry.morphAttributes.position=[stride,leftLift,rightLift].map(data=>new T.BufferAttribute(data,3));
       part.updateMorphTargets();
     });
-    const scale=2.8/height;
-    trollModel=new T.Group();
+    const scale=targetHeight/height;
+    const walker=new T.Group();
     model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
-    trollModel.add(model);
-    trollModel.scale.setScalar(scale);
-  },undefined,error=>console.warn('Falha ao carregar o Troll.',error));
+    walker.add(model);
+    walker.scale.setScalar(scale);
+    if(kind===0){
+      model.traverse(part=>{
+        if(part.isMesh)part.material=new T.MeshStandardMaterial({color:0x574b49,roughness:.92});
+      });
+    }
+    walkingModels[kind]=walker;
+    },undefined,error=>console.warn('Falha ao carregar inimigo animado.',error));
+  }
+  loadWalker(new URL('./assets/troll.glb', import.meta.url).href,1,2.8);
+  loadWalker(new URL('./assets/lobisomem.glb', import.meta.url).href,0,2.45);
   const actors=new Map(), beams=new Map();
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
@@ -1123,14 +1133,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(g);
       return g;
     }
-    if(m.k===1&&trollModel){
-      g.add(trollModel.clone(true));
+    if(walkingModels[m.k]){
+      g.add(walkingModels[m.k].clone(true));
       g.userData.legs=[];
       g.traverse(part=>{
         if(part.morphTargetInfluences)g.userData.legs.push(part.morphTargetInfluences);
       });
       g.userData.stepDistance=0;
-      g.userData.customTroll=true;
+      g.userData.customWalker=true;
       scene.add(g);
       return g;
     }
@@ -1155,7 +1165,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}
     for(const m of mobs){
       const previous=actors.get(m);
-      if(!previous||(m.k===1&&trollModel&&!previous.userData.customTroll)){
+      if(!previous||(walkingModels[m.k]&&!previous.userData.customWalker)){
         if(previous)scene.remove(previous);
         actors.set(m,makeActor(m));
       }
@@ -1181,7 +1191,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         }
         g.userData.lastStep={x:m.x,y:m.y};
       }
-      const bounce=(m.k===1||walkMixer) ? -.035 : Math.sin(performance.now()/65+m.x)*.12+.1;
+      const bounce=(m.k===1||legs||walkMixer) ? -.035 : Math.sin(performance.now()/65+m.x)*.12+.1;
       g.position.copy(pos(m.x,m.y,bounce));
       g.position.y+=bridgeHeight(g.position.x,g.position.z);
       if(!g.userData.healthBar){
