@@ -849,10 +849,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         mesh(scene,box,trim,x,3.55,z,1.45,7.1,1.15);
       }
     }
-    for(const x of [-30,-25,-20,-15,-10,-5,0]){
-      const pew=mesh(scene,box,0x77533d,x,.55,-10.4,.42,.25,2.6);
-      pew.rotation.y=.14*Math.sin(x);
-      mesh(scene,box,0x493326,x-.35,.3,-10.4,.22,.6,2.4);
+    for(const [x,z,angle,length] of [[-27,-12,.9,1.8],[-23,7,-.6,1.3],
+      [-14,-11,1.3,2.1],[-7,4,-.8,1.6],[3,12,.4,1.4],[11,-12,-1.1,2],[21,10,.7,1.7]]){
+      mesh(scene,box,0x77533d,x,.13,z,.32,.22,length).rotation.y=angle;
     }
     const crypt=pos(...cathedralRoutes[0].at(-1));
     const groundFire=new T.LatheGeometry([
@@ -878,7 +877,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       mesh(scene,box,stoneColor,crypt.x+.42,7.65,z,.75,.75,.82);
     }
     mesh(scene,box,0x721737,crypt.x+.43,1.8,0,.12,3.6,2.7,true);
-    for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-3],[35,0,-12],[35,0,12],
+    for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-11],[35,0,-12],[35,0,12],
       [crypt.x-1,0,-5],[crypt.x-1,0,5],[crypt.x+1.5,8.6,-5.3],[crypt.x+1.5,8.6,5.3]]){
       mesh(scene,cylinder,trim,x,y+.32,z,.74,.64,.74);
       const flame=new T.Mesh(groundFire,new T.MeshBasicMaterial({color:0xff6330}));
@@ -983,7 +982,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       ['gothic_archway',[[805,215]],5],
       ['candelabra',[[160,232],[300,71],[500,345],[742,115],[777,296]],1.6],
       ['tombstone',[[120,390],[210,406],[332,392],[418,374]],1.25],
-      ['coffin',[[80,65],[165,65],[255,65],[540,65],[680,85],[95,400],[280,405],[700,365]],1.05],
+      ['coffin',[[52,56,1.1],[165,75,.8],[255,53,1.55],[539,72,-.9],[680,100,.55],[66,219,-1.4],[244,254,.95],[700,355,1.25]],1.05],
       ['bat_flying',[[120,215],[260,215],[400,215],[540,215],[680,215]],.65],
       ['pillar',[[140,46],[370,46],[635,46],[140,402],[635,384]],4],
       ['portrait',[[300,22],[560,408]],1.7],
@@ -998,9 +997,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const scale=height/(bounds.max.y-bounds.min.y);
         model.scale.setScalar(scale);
         model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
-        for(const [x,y] of placements){
+        for(const [x,y,angle=0] of placements){
           const prop=new T.Group();
           prop.position.copy(pos(x,y));
+          prop.rotation.y=angle;
           if(name==='wall_sconce'||name==='portrait'){
             prop.position.y=name==='wall_sconce'?2.65:2.3;
             if(prop.position.z>0)prop.rotation.y=Math.PI;
