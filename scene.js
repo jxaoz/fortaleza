@@ -1978,6 +1978,31 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const figure=walker.clone(true);
       if(m.k===4){
         figure.scale.multiplyScalar(2.15);
+        const recolored=new Map();
+        function giantMaterial(original){
+          if(!original.map)return original;
+          if(!recolored.has(original)){
+            const material=original.clone();
+            material.onBeforeCompile=shader=>{
+              const recolor=`
+                vec3 redSkin(vec3 color) {
+                  float dominance=color.g-max(color.r,color.b);
+                  float mask=smoothstep(.035,.19,dominance/max(color.g,.025));
+                  return mix(color,vec3(color.g*1.08,color.b*.37,color.r*.49),mask);
+                }`;
+              shader.fragmentShader=recolor+shader.fragmentShader
+                .replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=redSkin(diffuseColor.rgb);')
+                .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance=redSkin(totalEmissiveRadiance);');
+            };
+            material.customProgramCacheKey=()=> 'giant-red-skin';
+            recolored.set(original,material);
+          }
+          return recolored.get(original);
+        }
+        figure.traverse(part=>{
+          if(!part.isMesh)return;
+          part.material=Array.isArray(part.material)?part.material.map(giantMaterial):giantMaterial(part.material);
+        });
         for(const x of [-.23,.23])mesh(g,ball,0xff572f,x,5.17,.56,.07,.07,.07,true);
       }
       g.add(figure);
