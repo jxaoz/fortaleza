@@ -99,7 +99,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? .65 : 3.0));
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? 1.12 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
