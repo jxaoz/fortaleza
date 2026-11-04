@@ -101,6 +101,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }, {passive: false});
   scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? .65 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
+  renderer.shadowMap.enabled=true;
+  renderer.shadowMap.type=T.PCFShadowMap;
+  moon.castShadow=true;
+  moon.shadow.mapSize.set(2048,2048);
+  Object.assign(moon.shadow.camera,{left:-48,right:48,top:32,bottom:-32,near:1,far:105});
+  moon.shadow.normalBias=.065;
+  moon.shadow.bias=-.00015;
+  moon.shadow.intensity=.72;
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
@@ -259,6 +267,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       });
     }
     const m = new T.Mesh(geometry,materials.get(key));
+    m.receiveShadow=!glow;
+    m.castShadow=!glow && h>.4 && (shape===box||shape===cylinder);
     m.position.set(x,y,z); m.scale.set(w,h,d); parent.add(m);
     return m;
   }
@@ -1287,6 +1297,46 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const mark=mesh(g,cylinder,0xd2eeff,0,.34,0,1.25,.08,1.25,true);
     g.userData={i,disc,mark,level:0};return g;
   });
+  const platformTextures=new T.TextureLoader(loadingManager);
+  const platformMap=name=>platformTextures.load(new URL('./assets/platform-'+name+'.jpg',import.meta.url).href);
+  const rockColor=platformMap('diffuse');
+  rockColor.colorSpace=T.SRGBColorSpace;
+  const rockMaterial=new T.MeshPhongMaterial({
+    map:rockColor,normalMap:platformMap('normal'),bumpMap:platformMap('height'),
+    bumpScale:.035,specularMap:platformMap('specular'),specular:0x4c4c4c,shininess:13
+  });
+  const rockUrl=new URL('./assets/platform-rock.fbx',import.meta.url).href;
+  loadingManager.itemStart(rockUrl);
+  new FBXLoader().load(rockUrl,model=>{
+    try{
+      const bounds=new T.Box3().setFromObject(model);
+      const size=bounds.getSize(new T.Vector3());
+      if(!(size.x>0&&size.y>0&&size.z>0))return;
+      model.position.sub(bounds.getCenter(new T.Vector3()));
+      model.position.y+=size.y/2;
+      model.traverse(part=>{
+        if(part.isMesh){
+          part.material=rockMaterial;
+          part.castShadow=true;
+          part.receiveShadow=true;
+        }
+      });
+      const rock=new T.Group();
+      rock.add(model);
+      rock.scale.set(1.85/size.x,.21/size.y,1.85/size.z);
+      spots.forEach((spot,i)=>{
+        const platform=rock.clone(true);
+        platform.rotation.y=i*1.63;
+        spot.add(platform);
+        spot.userData.rock=platform;
+        spot.userData.mark.position.y=.23;
+        spot.userData.mark.scale.set(.72,.035,.72);
+      });
+    }finally{loadingManager.itemEnd(rockUrl);}
+  },undefined,error=>{
+    console.warn('Não foi possível carregar a plataforma de rocha',error);
+    loadingManager.itemEnd(rockUrl);
+  });
   const pickTargets=spots.map(spot=>spot.userData.disc);
   const pointer=new T.Vector2(), ray=new T.Raycaster();
   let pan;
@@ -1502,7 +1552,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const {disc,mark}=g.userData;
     const customModel = [gargoyleModel,alchemistModel,sniperModel,draculaModel][t?.kind];
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
-      for(const part of g.children.slice(2))g.remove(part);
+      for(const part of g.children.slice(2))if(part!==g.userData.rock)g.remove(part);
       g.userData.figure=undefined;
       g.userData.levelBadge=undefined;
       g.userData.model=customModel;
@@ -1515,6 +1565,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
           figure.position.y=.16;
           const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
           figure.rotation.y=facing+(t.kind===2?Math.PI:0);
+          figure.traverse(part=>{if(part.isMesh){part.castShadow=true;part.receiveShadow=true;}});
           g.add(figure);
           if(t.kind===2){
             g.userData.figure=figure;
@@ -1554,7 +1605,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const badgeScale=1.65 * camera.zoom ** -1.07;
     g.userData.levelBadge?.scale.set(1.75*badgeScale,.44*badgeScale,1);
     mark.visible=!t;
-    disc.visible=!customModel;
+    disc.visible=!customModel&&!g.userData.rock;
 
   }
   let witchModel, witchWalk;
