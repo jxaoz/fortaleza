@@ -619,7 +619,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const center=bounds.getCenter(new T.Vector3());
     const scale=1.65/Math.max(size.x,size.y,size.z);
     model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
-    for(const [x,z,angle] of [[3.1,7.7,.2],[5,8.5,-.18],[7.1,8.1,.35],[6.2,-8.5,-.3]]){
+    for(const [x,z,angle] of [[3.1,7.7,.2],[5,8.5,-.18],[7.1,8.1,.35],[6.2,-8.5,-.3],[-11.8,7.4,.3],[-12.2,11.5,-.25]]){
       const coffin=new T.Group();
       coffin.add(model.clone(true));
       coffin.position.set(gate.x+x,-.05,gate.z+z);
