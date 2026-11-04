@@ -930,7 +930,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     scene.add(shaft,shaft.target);
     const entranceX=pos(...cathedralRoutes[0][0]).x;
     const facadeHeight=8.3;
-    mesh(scene,box,stoneColor,entranceX-.57,facadeHeight/2,0,.26,facadeHeight,31.8);
+    mesh(scene,box,stoneColor,entranceX-.63,facadeHeight/2,0,.26,facadeHeight,31.8);
     let wallStart=-15.5;
     cathedralRoutes.forEach(route=>{
       const {z}=pos(...route[0]);
@@ -962,12 +962,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       wallStart=z+1.65;
     });
     mesh(scene,box,stoneColor,entranceX,facadeHeight/2,(wallStart+15.5)/2,1.05,facadeHeight,15.5-wallStart);
-    mesh(scene,box,trim,entranceX,8.18,0,1.15,.24,32);
+    mesh(scene,box,trim,entranceX-.08,8.4,0,1.4,.2,31.8);
     const kit=[
       ['gothic_archway',[[805,215]],5],
       ['candelabra',[[160,232],[300,71],[500,345],[742,115],[777,296]],1.6],
       ['tombstone',[[120,390],[210,406],[332,392],[418,374]],1.25],
-      ['coffin',[[52,56,1.1],[176,42,.8],[255,53,1.55],[539,72,-.9],[680,100,.55],[66,219,-1.4],[244,254,.95],[700,355,1.25]],1.05],
+      ['coffin',[[52,56,1.1],[176,42,.8],[255,53,1.55],[539,72,-.9],[680,100,.55],[66,219,-1.4],[244,351,.95],[700,355,1.25]],1.05],
       ['bat_flying',[[120,215],[260,215],[400,215],[540,215],[680,215]],.65],
       ['pillar',[[140,46],[370,46],[635,46],[140,402],[635,384]],4],
       ['portrait',[[300,22],[560,408]],1.7],
