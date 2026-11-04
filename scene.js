@@ -100,8 +100,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, dungeonRoute ? 1.65 : cathedralRoutes ? 1.12 : 3.0));
-  const moon = new T.DirectionalLight(0xc4dbff, dungeonRoute ? .65 : cathedralRoutes ? .85 : 2.6);
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, dungeonRoute ? 2.3 : cathedralRoutes ? 1.12 : 3.0));
+  const moon = new T.DirectionalLight(0xc4dbff, dungeonRoute ? .92 : cathedralRoutes ? .85 : 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
