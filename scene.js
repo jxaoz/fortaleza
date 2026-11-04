@@ -1140,6 +1140,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }
   loadWalker(new URL('./assets/troll.glb', import.meta.url).href,1,2.8);
   loadWalker(new URL('./assets/lobisomem.glb', import.meta.url).href,0,2.45);
+  let hunterModel;
+  new GLTFLoader(loadingManager).load(new URL('./assets/cacador.glb', import.meta.url).href,({scene:model})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const height=bounds.getSize(new T.Vector3()).y;
+    if(!Number.isFinite(height)||height<=0)return;
+    const center=bounds.getCenter(new T.Vector3());
+    hunterModel=new T.Group();
+    model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
+    hunterModel.add(model);
+    hunterModel.scale.setScalar(2.55/height);
+  });
+  const grenadeEffects=new Map();
+  const shockwave=new T.RingGeometry(.78,1,40);
   const actors=new Map(), beams=new Map();
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
@@ -1152,6 +1165,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         mixer.clipAction(witchWalk).play();
         g.userData.walkMixer=mixer;
       }
+      scene.add(g);
+      return g;
+    }
+    if(m.k===2&&hunterModel){
+      g.add(hunterModel.clone(true));
       scene.add(g);
       return g;
     }
@@ -1252,7 +1270,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     });
     current.offset.y=-(now*.00015)%1;
     for(const shot of shots){
-      if(beams.has(shot)) continue;
+      if(shot.grenade||beams.has(shot)) continue;
       const spot=spots.find(g=>{
         const [x,y]=pads[g.userData.i];
         return x===shot.x&&y===shot.y;
@@ -1288,10 +1306,52 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       figure.position.y=.16+recoil*.13;
     }
     const visible=new Set(shots);
+    for(const [shot,effect] of grenadeEffects){
+      if(visible.has(shot))continue;
+      scene.remove(effect);
+      effect.traverse(part=>part.material?.dispose());
+      grenadeEffects.delete(shot);
+    }
+    for(const shot of shots){
+      if(!shot.grenade)continue;
+      let effect=grenadeEffects.get(shot);
+      if(!effect){
+        effect=new T.Group();
+        effect.position.copy(pos(shot.a,shot.b,.65));
+        const spot=spots.find((_,i)=>pads[i][0]===shot.a&&pads[i][1]===shot.b);
+        effect.position.y+=spot?.position.y??0;
+        const flashMaterial=new T.MeshBasicMaterial({
+          color:0xfff4ce,transparent:true,depthWrite:false,blending:T.AdditiveBlending
+        });
+        effect.add(new T.Mesh(ball,flashMaterial));
+        const ring=new T.Mesh(shockwave,new T.MeshBasicMaterial({
+          color:0xffbe57,transparent:true,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending
+        }));
+        ring.rotation.x=-Math.PI/2;
+        effect.add(ring);
+        const sparks=flashMaterial.clone();
+        sparks.color.setHex(0xffcf78);
+        for(let i=0;i<16;i++)effect.add(new T.Mesh(ball,sparks));
+        scene.add(effect);
+        grenadeEffects.set(shot,effect);
+      }
+      const t=1-shot.life/.6;
+      const [flash,ring,...sparks]=effect.children;
+      flash.scale.setScalar(.28+t*2.2);
+      flash.material.opacity=(1-t)**4;
+      ring.scale.setScalar(.35+t*3.5);
+      ring.material.opacity=(1-t)**2;
+      sparks.forEach((spark,i)=>{
+        const angle=i*Math.PI/8;
+        spark.position.set(Math.cos(angle)*t*3,Math.sin(t*Math.PI)*(.7+i%3*.23),Math.sin(angle)*t*3);
+        spark.scale.set(.075,.15,.075);
+        spark.material.opacity=1-t;
+      });
+    }
     for(const [s,b] of beams)if(!visible.has(s)){
       scene.remove(b);b.geometry.dispose();b.material.dispose();beams.delete(s);
     }
-    for(const s of shots)if(!beams.has(s)){
+    for(const s of shots)if(!s.grenade&&!beams.has(s)){
       const impact=pos(s.a,s.b,1);
       impact.y+=bridgeHeight(impact.x,impact.z);
       const source=spots.find((_,i)=>pads[i][0]===s.x&&pads[i][1]===s.y);

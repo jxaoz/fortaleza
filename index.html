@@ -234,7 +234,7 @@ function tick(dt){
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;
   if(d<=speed){m.x=x;m.y=y;if(++m.seg===path.length){m.escaped=true;hp=Math.max(0,hp-(m.k===3?5:2));refresh()}}
   else{m.x+=(x-m.x)*speed/d;m.y+=(y-m.y)*speed/d}
-  if(m.k===2&&!m.flash){const i=pads.findIndex(([a,b],i)=>placed[i]&&Math.hypot(a-m.x,b-m.y)<87);if(i>=0){placed[i].jam=2.8;m.flash=true;say('Um caçador lançou uma granada de luz na torre '+(i+1)+'.')}}
+  if(m.k===2&&!m.flash){const i=pads.findIndex(([a,b],i)=>placed[i]&&Math.hypot(a-m.x,b-m.y)<87);if(i>=0){placed[i].jam=2.8;m.flash=true;shots.push({grenade:true,a:pads[i][0],b:pads[i][1],life:.6});say('Um caçador lançou uma granada de luz na torre '+(i+1)+'.')}}
  }
  if(!hp){done=true;active=false;refresh();$('defeat-wave').textContent='A fortaleza caiu na onda '+wave+'.';$('game-over').showModal();return}
  mobs=mobs.filter(m=>!m.escaped);
