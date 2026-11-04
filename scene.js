@@ -779,7 +779,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const outer=new T.MeshBasicMaterial({color:0xff5028});
     const inner=new T.MeshBasicMaterial({color:0xffbf58});
     for(const [x,z,width] of [[-28,-6,2.5],[-29,13,2.7],[-4,14,2.1],
-      [1,-12,1.8],[8,8,1.45],[22,-5,1.55],[24,5,1.15]]){
+      [1,-12,1.8],[bankLeft-2,8,1.45],[22,-5,1.55],[24,5,1.15]]){
       for(let i=0;i<5;i++){
         const offset=(i-2)*width/4;
         const depth=Math.sin(i*2.4+x)*.36;
