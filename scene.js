@@ -1105,6 +1105,28 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const center=bounds.getCenter(new T.Vector3());
     const height=bounds.getSize(new T.Vector3()).y;
     if(!Number.isFinite(height)||height<=0) return;
+    model.updateMatrixWorld(true);
+    model.traverse(part=>{
+      if(!part.isMesh)return;
+      const geometry=part.geometry;
+      const vertices=geometry.attributes.position;
+      const stride=new Float32Array(vertices.count*3);
+      const leftLift=new Float32Array(stride.length),rightLift=new Float32Array(stride.length);
+      const inverseBasis=new T.Matrix3().setFromMatrix4(part.matrixWorld).invert();
+      const forward=new T.Vector3(0,0,height*.14).applyMatrix3(inverseBasis);
+      const upward=new T.Vector3(0,height*.065,0).applyMatrix3(inverseBasis);
+      const point=new T.Vector3();
+      for(let i=0;i<vertices.count;i++){
+        point.fromBufferAttribute(vertices,i).applyMatrix4(part.matrixWorld);
+        const weight=1-T.MathUtils.smoothstep((point.y-bounds.min.y)/height,.12,.48);
+        const side=point.x<center.x?-1:1;
+        forward.clone().multiplyScalar(side*weight).toArray(stride,i*3);
+        upward.clone().multiplyScalar(weight).toArray(side<0?leftLift:rightLift,i*3);
+      }
+      geometry.morphTargetsRelative=true;
+      geometry.morphAttributes.position=[stride,leftLift,rightLift].map(data=>new T.BufferAttribute(data,3));
+      part.updateMorphTargets();
+    });
     const scale=2.8/height;
     trollModel=new T.Group();
     model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
@@ -1117,6 +1139,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const g=new T.Group(), c=colors[m.k];
     if(m.k===1&&trollModel){
       g.add(trollModel.clone(true));
+      g.userData.legs=[];
+      g.traverse(part=>{
+        if(part.morphTargetInfluences)g.userData.legs.push(part.morphTargetInfluences);
+      });
+      g.userData.stepDistance=0;
       g.userData.customTroll=true;
       scene.add(g);
       return g;
@@ -1147,7 +1174,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         actors.set(m,makeActor(m));
       }
       const g=actors.get(m), target=road[m.seg];
-      g.position.copy(pos(m.x,m.y,Math.sin(performance.now()/(m.k===1?115:65)+m.x)*.12+.1));
+      const legs=g.userData.legs;
+      if(legs){
+        const last=g.userData.lastStep;
+        if(last)g.userData.stepDistance+=Math.hypot(m.x-last.x,m.y-last.y)/13;
+        g.userData.lastStep={x:m.x,y:m.y};
+        const phase=g.userData.stepDistance*Math.PI/.78;
+        for(const weights of legs){
+          weights[0]=Math.cos(phase);
+          weights[1]=Math.max(0,Math.sin(phase));
+          weights[2]=Math.max(0,-Math.sin(phase));
+        }
+      }
+      const bounce=m.k===1 ? -.035 : Math.sin(performance.now()/65+m.x)*.12+.1;
+      g.position.copy(pos(m.x,m.y,bounce));
       g.position.y+=bridgeHeight(g.position.x,g.position.z);
       if(!g.userData.healthBar){
         const bar=new T.Sprite(healthBadges[20]);
