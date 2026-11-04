@@ -139,7 +139,7 @@ button[aria-pressed=true],#go{
       <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div></section>
       <div class="controls">
 
-        <div class="zoom" role="group" aria-label="Câmera do mapa"><button id="fullscreen" type="button" aria-label="Entrar em tela cheia" title="Tela cheia">⛶</button><button id="rotate-left" aria-label="Girar mapa à esquerda">↶</button><button id="rotate-right" aria-label="Girar mapa à direita">↷</button><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
+        <div class="zoom" role="group" aria-label="Câmera do mapa"><button id="music-toggle" type="button" aria-pressed="true">Música: on</button><button id="fullscreen" type="button" aria-label="Entrar em tela cheia" title="Tela cheia">⛶</button><button id="rotate-left" aria-label="Girar mapa à esquerda">↶</button><button id="rotate-right" aria-label="Girar mapa à direita">↷</button><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
         <div class="actions"><button id="pause" type="button" aria-pressed="false">Pausar</button><button id="speed" type="button" aria-label="Velocidade atual 1×. Clique para alternar">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
@@ -168,7 +168,9 @@ button[aria-pressed=true],#go{
 <script type="module">
 import * as T from 'three';
 import {createScene} from "./scene.js?v=marble-blood-pillar";
+import {setupAudio} from "./audio.js";
 const $=id=>document.getElementById(id);
+const playDefenseSound=setupAudio($('music-toggle'));
 const fullscreenButton=$('fullscreen');
 fullscreenButton.hidden=!document.fullscreenEnabled;
 fullscreenButton.onclick=async()=>{
@@ -441,6 +443,7 @@ function tick(dt){
   const effectiveRange=defenseRange(t.kind,t.level,i);
   const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<effectiveRange).reverse();
   if(!targets.length)return;
+  playDefenseSound(t.kind);
   for(const m of (t.kind===1?targets:targets.slice(0,1))){
    if(t.kind===3){
     const dx=m.x-x,dy=m.y-y;
