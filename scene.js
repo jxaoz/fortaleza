@@ -1756,7 +1756,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const markerTime=performance.now()*.004;
     spots.forEach((g,i)=>{
       updateTower(g,placed[i]);
-      g.userData.mark.position.y =1.12+Math.sin(markerTime+i*.38)*.15;
+      g.userData.mark.position.y =1.65+Math.sin(markerTime+i*.38)*.15;
     });
     const live=new Set(mobs);
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}
