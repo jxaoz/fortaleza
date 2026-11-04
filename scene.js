@@ -854,6 +854,39 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(light);
       cathedralFires.push({flame,core,light});
     }
+    for(const [x,z,angle] of [[-24,3,.7],[-10,-9,-.4],[7,10,1.4],[19,-8,2.2]]){
+      const body=new T.Group();
+      body.position.set(x,.03,z);
+      body.rotation.y=angle;
+      scene.add(body);
+      mesh(body,ball,0x651324,0,.015,0,1.8,.026,2.9);
+      mesh(body,box,0x34313f,0,.24,0,.65,.39,.8);
+      mesh(body,ball,0x9b8276,0,.23,-.65,.32,.35,.35);
+      for(const side of [-1,1]){
+        mesh(body,box,0x3d3844,side*.21,.16,.7,.23,.25,.79);
+        mesh(body,box,0x48404a,side*.52,.14,.04,.21,.22,.68).rotation.y=side*.56;
+      }
+    }
+    const groundFire=new T.ConeGeometry(.34,.94,8);
+    const fireOrange=new T.MeshBasicMaterial({color:0xff5020});
+    const fireGold=new T.MeshBasicMaterial({color:0xffbd53});
+    for(const [x,z] of [[-30,-10],[-16,10],[1,-5],[15,8],[33,-9]]){
+      mesh(scene,ball,0x1e1518,x,.035,z,3.6,.04,1.9);
+      const light=new T.PointLight(0xff5725,8,5);
+      light.position.set(x,.72,z);
+      scene.add(light);
+      for(let i=0;i<7;i++){
+        const flame=new T.Mesh(groundFire,fireOrange);
+        flame.position.set(x+(i-3)*.43,.42,z+Math.sin(i*2)*.45);
+        flame.rotation.y=i;
+        const core=new T.Mesh(groundFire,fireGold);
+        core.position.copy(flame.position);
+        core.position.y=.27;
+        core.scale.set(.58,.56,.58);
+        scene.add(flame,core);
+        cathedralFires.push({flame,core,light:i===0?light:null,coreHeight:.56});
+      }
+    }
     const reserveLight=new T.PointLight(0xff285a,42,11);
     reserveLight.position.set(crypt.x-1,2,0);
     scene.add(reserveLight);
@@ -1544,12 +1577,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const phase=(now+i*1130)%(3700+i*870);
       material.opacity=phase<110||phase>270&&phase<385?0:.92;
     });
-    cathedralFires.forEach(({flame,core,light},i)=>{
+    cathedralFires.forEach(({flame,core,light,coreHeight=1},i)=>{
       const flicker=Math.sin(now*.014+i)*.14+Math.sin(now*.023+i*2)*.09;
       flame.scale.set(1-flicker*.6,1+flicker,1-flicker*.6);
       flame.rotation.z=flicker*.45;
-      core.scale.y=1-flicker*.6;
-      light.intensity=9+flicker*9;
+      core.scale.y=coreHeight*(1-flicker*.6);
+      if(light)light.intensity=9+flicker*9;
     });
     cathedralBats.forEach(({prop,mixer,center},i)=>{
       const angle=now*.0012+i*2.1;
