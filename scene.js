@@ -220,51 +220,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       ctx.stroke();
     }
   });
-  const grassTile=document.createElement('canvas');
-  grassTile.width=grassTile.height=256;
-  const grassPaint=grassTile.getContext('2d');
-  const groundTexture=new T.CanvasTexture(grassTile);
-  function paintGrass(image){
-    grassPaint.fillStyle='#273b29';
-    grassPaint.fillRect(0,0,256,256);
-    if(image){
-      grassPaint.globalAlpha=.24;
-      grassPaint.drawImage(image,0,0,256,256);
-      grassPaint.globalAlpha=1;
-    }
-    let seed=86;
-    const sample=()=>{
-      seed=(Math.imul(seed,1664525)+1013904223)>>>0;
-      return seed/4294967296;
-    };
-    const greens=['#17291d','#243b26','#365038','#4d6646','#627650'];
-    for(let patch=0;patch<90;patch++){
-      const x=sample()*256,y=sample()*256,radius=8+sample()*22;
-      const shade=grassPaint.createRadialGradient(x,y,0,x,y,radius);
-      shade.addColorStop(0,patch%3===0?'#76684466':'#152a1f88');
-      shade.addColorStop(1,'#17291d00');
-      grassPaint.fillStyle=shade;
-      grassPaint.fillRect(x-radius,y-radius,radius*2,radius*2);
-    }
-    for(let tuft=0;tuft<1450;tuft++){
-      const x=sample()*256,y=sample()*256;
-      for(let blade=0;blade<6;blade++){
-        const lean=(sample()-.5)*8,length=2+sample()*8;
-        grassPaint.fillStyle=greens[Math.floor(sample()*greens.length)];
-        grassPaint.beginPath();
-        grassPaint.moveTo(x-.65,y);
-        grassPaint.quadraticCurveTo(x+lean*.35,y-length*.65,x+lean,y-length);
-        grassPaint.quadraticCurveTo(x+lean*.65,y-length*.45,x+.65,y);
-        grassPaint.fill();
-      }
-    }
-    groundTexture.needsUpdate=true;
-  }
-  paintGrass();
-  new T.TextureLoader(loadingManager).load(new URL('./assets/grass-ground.jpg', import.meta.url).href, texture=>{
-    paintGrass(texture.image);
-    texture.dispose();
-  });
+  const groundTexture=new T.TextureLoader(loadingManager).load(new URL('./assets/grama-noturna.png', import.meta.url).href);
   groundTexture.colorSpace=T.SRGBColorSpace;
   groundTexture.wrapS=groundTexture.wrapT=T.RepeatWrapping;
   groundTexture.anisotropy=Math.min(8,renderer.capabilities.getMaxAnisotropy());
@@ -282,7 +238,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const [map,tileSize] = surfaces.get(color) || [];
     const key = color + ':' + glow;
     if(!materials.has(key)) materials.set(key, new T.MeshStandardMaterial({
-      color:color===0x46546a ? 0xc6d7bd : color, map:map || null, bumpMap:map===current ? null : map || null, bumpScale:map===stone ? .055 : .028, roughness:map===current ? .38 : .94, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
+      color:color===0x46546a ? 0x818e7c : color, map:map || null, bumpMap:map===current ? null : map || null, bumpScale:map===stone ? .055 : .028, roughness:map===current ? .38 : .94, flatShading:true, emissive:glow ? color : 0, emissiveIntensity:.85
     }));
     let geometry=shape;
     if(tileSize && shape===box){
