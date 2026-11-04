@@ -1,7 +1,8 @@
 export function setupAudio(button){
   const Audio = window.AudioContext || window.webkitAudioContext;
   if(!Audio){
-    button.hidden=true;
+    button.disabled=true;
+    button.textContent='Música indisponível';
     return ()=>{};
   }
 
@@ -44,18 +45,18 @@ export function setupAudio(button){
     if(!context){
       context=new Audio();
       music=context.createGain();
-      music.gain.value=muted?0:.25;
+      music.gain.value=muted?0:.45;
       music.connect(context.destination);
       setInterval(schedule,90);
     }
     if(context.state!=='running')context.resume().catch(()=>{});
   }
-  window.addEventListener('pointerdown',activate,{once:true});
+  document.addEventListener('click',activate,{capture:true,once:true});
   window.addEventListener('keydown',activate,{once:true});
   button.onclick=()=>{
     activate();
     muted=!muted;
-    music.gain.setTargetAtTime(muted?0:.25,context.currentTime,.025);
+    music.gain.setTargetAtTime(muted?0:.45,context.currentTime,.025);
     button.textContent=muted?'Música: off':'Música: on';
     button.setAttribute('aria-pressed',String(!muted));
   };
