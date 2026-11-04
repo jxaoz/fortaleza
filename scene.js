@@ -6,7 +6,7 @@ import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/exam
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
-export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade, dungeonRoute=null) {
   const renderer = new T.WebGLRenderer({canvas, antialias:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio, .85));
   const scene = new T.Scene();
@@ -99,8 +99,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? 1.12 : 3.0));
-  const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, dungeonRoute ? 1.35 : cathedralRoutes ? 1.12 : 3.0));
+  const moon = new T.DirectionalLight(0xc4dbff, dungeonRoute ? .65 : cathedralRoutes ? .85 : 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
@@ -266,7 +266,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }
   const bridgeScenery=new T.Group();
   scene.add(bridgeScenery);
-  bridgeScenery.visible=!cathedralRoutes;
+  bridgeScenery.visible=!cathedralRoutes&&!dungeonRoute;
   const riverX=pos(577,0).x;
   const bankLeft=riverX-2,bankRight=riverX+2;
   const rampLength=1.25, rise=.78;
@@ -299,7 +299,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     bridgeScenery.add(ripples);
   }
   function bridgeHeight(x,y){
-    if(cathedralRoutes)return 0;
+    if(cathedralRoutes||dungeonRoute)return 0;
     if(Math.abs(y-bridgeZ)>1.65) return 0;
     return rise*T.MathUtils.clamp((2+rampLength-Math.abs(x-riverX))/rampLength,0,1);
   }
@@ -1050,6 +1050,102 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       });
     }
   }
+  let cauldronBlood,cauldronAura,cauldronLight;
+  if(dungeonRoute){
+    mesh(scene,box,0x84674f,0,-.66,0,82,1.28,37);
+    const rock=new T.DodecahedronGeometry(1);
+    const earthColors=[0x473735,0x52413c,0x3c3032];
+    for(const side of [-1,1]){
+      for(let i=0;i<18;i++){
+        const ridge=mesh(scene,rock,earthColors[i%3],-39+i*4.6,2.1,side*(16.8+Math.sin(i)*.7),3.2,4.3+Math.sin(i)*1.2,2.55);
+        ridge.rotation.set(i*.23,i*.91,i*.32);
+      }
+    }
+    for(const x of [-40,40]){
+      for(let i=0;i<7;i++){
+        mesh(scene,rock,earthColors[i%3],x,2.4,-16+i*5.3,2.65,4.2,3.8).rotation.y=i*.8;
+      }
+    }
+    for(const [x,z] of [[-26,-12],[-13,11],[2,-12],[13,12],[27,-12]]){
+      mesh(scene,box,0x68758d,x,2.6,z,1.4,5.2,1.4);
+      for(const y of [.23,5.05])mesh(scene,box,0x58627b,x,y,z,2,.46,2);
+    }
+    for(let i=1;i<dungeonRoute.length;i++){
+      const a=pos(...dungeonRoute[i-1]),b=pos(...dungeonRoute[i]);
+      const pathStone=mesh(scene,box,0x89869a,(a.x+b.x)/2,.01,(a.z+b.z)/2,a.distanceTo(b)+.12,.09,2.65);
+      pathStone.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
+    }
+    const entrance=pos(...dungeonRoute[0]);
+    const dungeonPortal=portal.clone(true);
+    dungeonPortal.position.set(entrance.x-.7,1.5,entrance.z);
+    scene.add(dungeonPortal);
+    const end=pos(...dungeonRoute.at(-1));
+    const cauldron=new T.Group();
+    cauldron.position.set(end.x+2.6,0,end.z);
+    scene.add(cauldron);
+    const iron=new T.MeshStandardMaterial({color:0x291c29,metalness:.62,roughness:.42,side:T.DoubleSide});
+    const bowl=new T.Mesh(new T.LatheGeometry([[.82,.25],[1.47,.42],[2.12,1.26],[2.22,2.26],[2.11,2.32]]
+      .map(([r,y])=>new T.Vector2(r,y)),32),iron);
+    cauldron.add(bowl);
+    const rim=new T.Mesh(new T.TorusGeometry(2.16,.15,10,40),iron);
+    rim.rotation.x=-Math.PI/2;
+    rim.position.y=2.27;
+    cauldron.add(rim);
+    cauldronBlood=mesh(cauldron,cylinder,0xc8143e,0,2.15,0,2.08,.1,2.08,true);
+    cauldronAura=new T.Sprite(new T.SpriteMaterial({map:glowTexture,color:0xff174d,opacity:.55,
+      blending:T.AdditiveBlending,depthWrite:false}));
+    cauldronAura.position.y=2.8;
+    cauldron.add(cauldronAura);
+    cauldronLight=new T.PointLight(0xff194e,40,13);
+    cauldronLight.position.y=3.3;
+    cauldron.add(cauldronLight);
+    const remains=[[ -28,9,.6],[-18,-11,1.5],[-8,7,-.8],[4,-9,.3],[16,12,2.1],[24,-8,-.5]];
+    remains.forEach(([x,z,angle],i)=>{
+      const bones=new T.Group();
+      bones.position.set(x,.09,z);
+      bones.rotation.y=angle;
+      scene.add(bones);
+      const color=i%2?0xaaa29a:0x777063;
+      mesh(bones,ball,color,0,.13,-.69,.32,.34,.34);
+      mesh(bones,box,color,0,.05,-.08,.09,.10,1.04);
+      for(let rib=0;rib<4;rib++)mesh(bones,ball,color,0,.06,-.39+rib*.14,.49,.11,.08);
+      for(const side of [-1,1]){
+        mesh(bones,box,color,side*.32,.06,-.05,.075,.08,.65).rotation.y=side*.37;
+        mesh(bones,box,color,side*.16,.05,.72,.09,.09,.83).rotation.y=side*.18;
+      }
+      if(i%2===0)mesh(bones,ball,0x463038,0,.015,.09,.68,.035,1.9);
+    });
+    const loader=new GLTFLoader(loadingManager);
+    loader.load(new URL('./assets/catedral-coffin.glb',import.meta.url).href,({scene:model})=>{
+      const bounds=new T.Box3().setFromObject(model);
+      const size=bounds.getSize(new T.Vector3());
+      const center=bounds.getCenter(new T.Vector3());
+      const scale=2.8/Math.max(size.x,size.y,size.z);
+      model.scale.setScalar(scale);
+      model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+      for(const side of [-1,1]){
+        for(let i=0;i<8;i++){
+          const coffin=new T.Group();
+          coffin.add(model.clone(true));
+          coffin.position.set(-32+i*8.6,.03,side*(13.5+Math.sin(i*2)*.75));
+          coffin.rotation.y=side*(.8+Math.sin(i*2.2)*.55);
+          scene.add(coffin);
+        }
+      }
+    });
+    loader.load(new URL('./assets/catedral-bat_flying.glb',import.meta.url).href,({scene:model,animations})=>{
+      const bounds=new T.Box3().setFromObject(model);
+      const size=bounds.getSize(new T.Vector3());
+      for(let i=0;i<9;i++){
+        const prop=cloneRig(model);
+        prop.scale.setScalar(1.2/Math.max(size.x,size.y,size.z));
+        scene.add(prop);
+        const mixer=new T.AnimationMixer(prop);
+        if(animations[0])mixer.clipAction(animations[0]).play();
+        cathedralBats.push({prop,mixer,center:new T.Vector3(-32+i*7.5,0,0)});
+      }
+    });
+  }
   let gargoyleModel;
   new STLLoader(loadingManager).load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
     geometry.rotateX(-Math.PI/2);
@@ -1269,7 +1365,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const arrowMarkerMaterial=new T.MeshBasicMaterial({color:0xff244b,transparent:true,opacity:.62,depthWrite:false});
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
-    if(!cathedralRoutes&&(i===6||i===7)){
+    if(!cathedralRoutes&&!dungeonRoute&&(i===6||i===7)){
       mesh(scene,box,0x68758d,p.x,.72,p.z,3.8,4.54,3.8);
       mesh(scene,box,0x58627b,p.x,3.11,p.z,4.1,.24,4.1);
       for(const dx of [-1.72,1.72]){
@@ -1437,7 +1533,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     ctx.fillRect(5,9,118*i/20,14);
   }));
   let draculaModel, bloodGoblin;
-  if(cathedralRoutes){
+  if(cathedralRoutes||dungeonRoute){
     const models=new T.LoadingManager();
     models.setURLModifier(url=>{
       const file=url.split(/[\\/]/).at(-1);
@@ -1537,6 +1633,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       model.traverse(part=>{if(part.isMesh)part.material=blood;});
       bloodGoblin=prop;
     });
+    if(cathedralRoutes){
     fitted('cathedral-door',4.3,4.8,.65,prop=>{
       cathedralRoutes.forEach(route=>{
         const door=prop.clone(true);
@@ -1571,6 +1668,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         }
       });
     }
+  }
   }
   function updateTower(g,t){
     const {disc,mark}=g.userData;
@@ -1887,6 +1985,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       prop.rotation.y=Math.atan2(-4*Math.sin(angle),4.7*Math.cos(angle));
       mixer.setTime(now*.001+i*.13);
     });
+    if(cauldronBlood){
+      const pulse=.5+.5*Math.sin(now*.003);
+      cauldronBlood.position.y=2.13+.055*pulse;
+      cauldronAura.scale.setScalar(5.3+pulse*.8);
+      cauldronLight.intensity=38+pulse*14;
+    }
     const portalPulse=.5+.5*Math.sin(now*.003);
     vortex.uniforms.time.value=now*.001;
     portalLight.intensity=3+portalPulse*3;
