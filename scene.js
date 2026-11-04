@@ -100,7 +100,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, dungeonRoute ? 1.35 : cathedralRoutes ? 1.12 : 3.0));
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, dungeonRoute ? 1.65 : cathedralRoutes ? 1.12 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, dungeonRoute ? .65 : cathedralRoutes ? .85 : 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
@@ -1108,7 +1108,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     for(const [x,z] of [[-27,10],[-21,-10],[-7,-11],[5,11],[24,-9]]){
       const shaft=new T.SpotLight(0xe6efff,215,26,.29,1);
       shaft.position.set(x-2,9,z);
-      shaft.target.position.set(x+2,0,z*.65);
+      shaft.target.position.set(x+2,0,z+3.5);
       scene.add(shaft,shaft.target);
       const direction=shaft.position.clone().sub(shaft.target.position);
       const beam=new T.Group();
