@@ -809,8 +809,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         }
       }
       // Continuous stone footing and a finished cornice make the nave feel enclosed.
-      mesh(scene,box,trim,.5,.18,wallZ,79,.36,1.2);
-      mesh(scene,box,trim,.5,8.18,wallZ,79,.24,1.2);
+      mesh(scene,box,trim,1,.18,wallZ,78,.36,1.2);
+      mesh(scene,box,trim,1,8.18,wallZ,78,.24,1.2);
     }
     for(const x of [40]){
       mesh(scene,box,stoneColor,x,3.55,0,1.05,7.1,31);
@@ -862,23 +862,39 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     shaft.target.position.set(1,0,-2);
     scene.add(shaft,shaft.target);
     const entranceX=pos(...cathedralRoutes[0][0]).x;
+    const facadeHeight=8.3;
     let wallStart=-15.5;
     cathedralRoutes.forEach(route=>{
       const {z}=pos(...route[0]);
       const edge=z-1.65;
-      mesh(scene,box,stoneColor,entranceX,3.55,(wallStart+edge)/2,1.05,7.1,edge-wallStart);
-      mesh(scene,box,stoneColor,entranceX,5.6,z,1.05,3,3.3);
+      mesh(scene,box,stoneColor,entranceX,facadeHeight/2,(wallStart+edge)/2,1.05,facadeHeight,edge-wallStart);
+      mesh(scene,box,stoneColor,entranceX,6.2,z,1.05,4.2,3.3);
       for(const side of [-1,1]){
         mesh(scene,box,trim,entranceX+.45,2,z+side*1.65,.68,4,.42);
       }
       mesh(scene,box,trim,entranceX+.45,4,z,.68,.4,3.7);
+      for(const side of [-1,1]){
+        const columnZ=z+side*1.97;
+        mesh(scene,box,stoneColor,entranceX+.68,1.95,columnZ,.72,3.9,.48);
+        for(const y of [.25,3.7]){
+          mesh(scene,box,trim,entranceX+.68,y,columnZ,.86,.26,.65);
+        }
+      }
+      for(let i=0;i<=10;i++){
+        const angle=i*Math.PI/10;
+        const voussoir=mesh(scene,box,stoneColor,entranceX+.65,
+          2.95+1.42*Math.sin(angle),z+1.87*Math.cos(angle),.64,.38,.52);
+        voussoir.rotation.x=-angle;
+      }
+      mesh(scene,box,trim,entranceX+.79,4.48,z,.55,.48,.48).rotation.x=Math.PI/4;
       const doorwayPortal=portal.clone();
       doorwayPortal.position.set(entranceX+.48,1.94,z);
       doorwayPortal.scale.set(1.66,1.98,1);
       scene.add(doorwayPortal);
       wallStart=z+1.65;
     });
-    mesh(scene,box,stoneColor,entranceX,3.55,(wallStart+15.5)/2,1.05,7.1,15.5-wallStart);
+    mesh(scene,box,stoneColor,entranceX,facadeHeight/2,(wallStart+15.5)/2,1.05,facadeHeight,15.5-wallStart);
+    mesh(scene,box,trim,entranceX,8.18,0,1.15,.24,32);
     const kit=[
       ['gothic_archway',[[805,215]],5],
       ['candelabra',[[160,232],[300,103],[500,306],[742,115],[777,296]],1.6],
