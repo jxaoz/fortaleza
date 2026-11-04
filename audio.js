@@ -1,12 +1,12 @@
-export function setupAudio(button){
+export function setupAudio(button,effectsButton){
   const Audio = window.AudioContext || window.webkitAudioContext;
   if(!Audio){
     button.disabled=true;
-    button.textContent='Música indisponível';
+    effectsButton.disabled=true;
     return ()=>{};
   }
 
-  let context, music, muted=false, nextBeat=0, beat=0;
+  let context, music, muted=false, effectsMuted=false, nextBeat=0, beat=0;
   const melody=[76,0,79,78,76,0,71,0,72,76,75,0,71,0,0,0,
     74,0,77,76,74,0,69,0,71,74,75,0,76,0,0,0];
   const bass=[40,47,43,47,45,48,47,39,38,45,41,45,43,47,47,39];
@@ -57,8 +57,13 @@ export function setupAudio(button){
     activate();
     muted=!muted;
     music.gain.setTargetAtTime(muted?0:.45,context.currentTime,.025);
-    button.textContent=muted?'Música: off':'Música: on';
     button.setAttribute('aria-pressed',String(!muted));
+  };
+
+  effectsButton.onclick=()=>{
+    activate();
+    effectsMuted=!effectsMuted;
+    effectsButton.setAttribute('aria-pressed',String(!effectsMuted));
   };
 
   const effects=[
@@ -68,7 +73,7 @@ export function setupAudio(button){
     [[125,49,.3,.08,'triangle'],[260,105,.23,.03,'sine']]
   ];
   return kind=>{
-    if(context?.state!=='running'||document.hidden)return;
+    if(effectsMuted||context?.state!=='running'||document.hidden)return;
     for(const sound of effects[kind]??[]){
       tone(context.destination,context.currentTime,...sound);
     }

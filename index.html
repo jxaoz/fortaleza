@@ -10,7 +10,10 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .bottom{align-items:flex-end}
 .panel{background:linear-gradient(145deg,#252739f5,#100e19f5);border:1px solid #76604f;box-shadow:inset 0 0 0 3px #090a1280,0 5px 20px #0007;border-radius:5px;padding:10px 14px}
 .brand{border-left:3px solid #cf536f}
-#music-toggle,#feedback-link{margin-top:8px;pointer-events:auto}
+.audio-controls{position:fixed;right:clamp(8px,2vw,24px);top:55%;transform:translateY(-50%);display:grid;gap:6px;z-index:5;pointer-events:auto}
+.audio-controls button{width:36px;height:36px;padding:0;font-size:19px}
+.audio-controls button[aria-pressed="false"]{opacity:.65;text-decoration:line-through}
+#feedback-link{margin-top:8px;pointer-events:auto}
 #feedback-link{display:inline-block;padding:6px 8px;border:1px solid #a36b76;border-radius:4px;background:#281c2b;color:#fff0de;font-size:12px;text-decoration:none}
 #feedback-link:is(:hover,:focus-visible){background:#4b283d}
 h1{margin:2px 0 0} .brand svg{display:block;width:clamp(120px,24vw,240px);height:auto}
@@ -130,7 +133,7 @@ button[aria-pressed=true],#go{
   <text x="87" y="74" fill="#ef778a" font-family="Georgia,serif" font-size="34" font-weight="bold" letter-spacing="6">RUBRA</text>
   <path d="M237 63h77m-67 5h56" fill="none" stroke="#936b6e"/>
   <path d="m324 63-5-4-5 4 5 4Z" fill="#c2546c"/>
-</svg></h1><button id="music-toggle" type="button" aria-pressed="true">Música: on</button> <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfzUxlAxVvw-gzMkvPa-pd_vz-19hXnJAYOWxm1pObks9PieA/viewform" target="_blank" rel="noopener noreferrer">Bugs e sugestões</a></header>
+</svg></h1> <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfzUxlAxVvw-gzMkvPa-pd_vz-19hXnJAYOWxm1pObks9PieA/viewform" target="_blank" rel="noopener noreferrer">Bugs e sugestões</a></header>
       <div id="hud" class="panel" aria-label="Estado da partida">
         <div class="stat"><span class="label">Sangue</span><div class="blood-value"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M8 3h8M12 3v4m0 15v4h5" fill="none" stroke="#db9da8" stroke-width="2" stroke-linecap="round"/><rect x="5" y="7" width="14" height="16" rx="3" fill="#542639" stroke="#db9da8"/><path d="M6 13h12v7a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2Z" fill="#cb3758"/><path d="M9 10h6" stroke="#ffe0dd" stroke-linecap="round"/></svg><strong id="blood"></strong></div></div>
         <div class="stat"><span class="label">Cripta</span><span class="crypt-meter"><progress id="health" class="crypt-health" max="12" value="12" tabindex="0" aria-label="Vida da Cripta"></progress><span id="crypt-values" class="crypt-values" aria-hidden="true">12 / 12</span></span></div>
@@ -146,6 +149,10 @@ button[aria-pressed=true],#go{
         <div class="actions"><button id="pause" type="button" aria-pressed="false">Pausar</button><button id="speed" type="button" aria-label="Velocidade atual 1×. Clique para alternar">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
+  </div>
+  <div class="audio-controls" role="group" aria-label="Áudio">
+    <button id="music-toggle" type="button" aria-label="Música" title="Música" aria-pressed="true">♫</button>
+    <button id="effects-toggle" type="button" aria-label="Efeitos sonoros" title="Efeitos sonoros" aria-pressed="true">🔊</button>
   </div>
 </main>
 <dialog id="game-over" class="panel" aria-labelledby="defeat-title">
@@ -171,9 +178,9 @@ button[aria-pressed=true],#go{
 <script type="module">
 import * as T from 'three';
 import {createScene} from "./scene.js?v=marble-blood-pillar";
-import {setupAudio} from "./audio.js?v=2";
+import {setupAudio} from "./audio.js?v=3";
 const $=id=>document.getElementById(id);
-const playDefenseSound=setupAudio($('music-toggle'));
+const playDefenseSound=setupAudio($('music-toggle'),$('effects-toggle'));
 const fullscreenButton=$('fullscreen');
 fullscreenButton.hidden=!document.fullscreenEnabled;
 fullscreenButton.onclick=async()=>{
