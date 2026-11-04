@@ -167,7 +167,7 @@ button[aria-pressed=true],#go{
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as T from 'three';
-import {createScene} from "./scene.js?v=cathedral-pillar-clearance";
+import {createScene} from "./scene.js?v=giant-balance";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
 import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js?v=dungeon-pads";
@@ -194,7 +194,7 @@ const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]]
 const pads=dungeon?dungeonPads:cathedral?cathedralPads:[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337],[606,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
 if(cathedral||dungeon)towers.push(['Drácula',105,155,1.85,39,'#e82b55']);
-const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Bruxa',510,31,50,'#f269a5'],['Gigante',2000,23,70,'#e89863']];
+const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Bruxa',510,31,50,'#f269a5'],['Gigante',2500,27,70,'#e89863']];
 const waves=dungeon?dungeonWaves:cathedral?cathedralWaves:[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let selectedDefense;
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
@@ -407,7 +407,7 @@ function tick(dt){
    }
    const shield=mobs.some(w=>w!==m&&w.k===3&&w.health>0&&Math.hypot(m.x-w.x,m.y-w.y)<105);
    m.health-=defenseDamage(t.kind,t.level)*(shield?.52:1);
-   if(t.kind===1)m.slow=1.65;
+   if(t.kind===1&&m.k!==4)m.slow=1.65;
    shots.push({x,y,a:m.x,b:m.y,color,kind:t.kind,duration:t.kind===0?.13:.26,life:t.kind===0?.13:.26});
   }
   t.cool=delay;
