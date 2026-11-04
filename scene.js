@@ -1073,6 +1073,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }
   let cauldronBlood,cauldronAura,cauldronLight;
   const cauldronMist=[];
+  const dungeonSpiders=[];
   if(dungeonRoute){
     mesh(scene,box,0x84674f,0,-.66,0,82,1.28,37);
     const rock=new T.DodecahedronGeometry(1);
@@ -1202,6 +1203,24 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     cauldronLight=new T.PointLight(0xff194e,40,13);
     cauldronLight.position.y=3.3;
     cauldron.add(cauldronLight);
+    const spiderLeg=new T.CylinderGeometry(.018,.026,.34,5);
+    for(const [x,z] of [[-29,-12],[-20,11],[-7,-13],[5,12],[17,-11],[27,10]]){
+      const body=new T.Group(),legs=[];
+      scene.add(body);
+      mesh(body,ball,0x312130,0,.23,-.13,.27,.21,.36);
+      mesh(body,ball,0x211720,0,.19,.14,.20,.15,.21);
+      for(const side of [-1,1]){
+        for(let i=0;i<4;i++){
+          const joint=new T.Group();
+          joint.position.set(side*.09,.19,(i-1.5)*.102);
+          body.add(joint);
+          mesh(joint,spiderLeg,0x352533,side*.13,.05,0,1,1,1).rotation.z=-side*1.12;
+          mesh(joint,spiderLeg,0x352533,side*.29,.015,0,1,.72,1).rotation.z=side*.42;
+          legs.push({joint,side,step:i});
+        }
+      }
+      dungeonSpiders.push({body,legs,x,z});
+    }
     const remains=[[ -28,9,.6],[-18,-11,1.5],[-8,3,-.8],[4,-9,.3],[16,12,2.1],[24,-8,-.5]];
     remains.forEach(([x,z,angle],i)=>{
       const bones=new T.Group();
@@ -2147,6 +2166,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         plume.material.opacity=.32*Math.sin(age*Math.PI);
       });
     }
+    dungeonSpiders.forEach(({body,legs,x,z},i)=>{
+      const angle=now*.00052+i*1.91;
+      body.position.set(x+1.65*Math.cos(angle),.025,z+.8*Math.sin(angle));
+      body.rotation.y=Math.atan2(-1.65*Math.sin(angle),.8*Math.cos(angle));
+      for(const {joint,side,step} of legs){
+        joint.rotation.y=side*((step-1.5)*.3+Math.sin(now*.016+step*Math.PI+side+i)*.26);
+      }
+    });
     const portalPulse=.5+.5*Math.sin(now*.003);
     vortex.uniforms.time.value=now*.001;
     portalLight.intensity=3+portalPulse*3;
