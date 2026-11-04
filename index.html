@@ -72,6 +72,9 @@ button[aria-pressed=true],#go{
 .loading-logo svg{display:block;width:100%;height:auto;margin:auto}
 .loading-panel p{color:#eed5d4}
 .loading-panel progress{width:100%;accent-color:#d45170}
+#game-over{width:min(88vw,420px);color:#fff0de;text-align:center;padding:28px}
+#game-over::backdrop{background:#100711c9}
+#game-over h2{margin:0;color:#ff879b;font: bold 36px Georgia,serif}
 </style>
 <section id="loading-screen" aria-label="Carregamento">
   <div class="panel loading-panel">
@@ -127,6 +130,11 @@ button[aria-pressed=true],#go{
     </div>
   </div>
 </main>
+<dialog id="game-over" class="panel" aria-labelledby="defeat-title">
+  <h2 id="defeat-title">A Cripta caiu</h2>
+  <p id="defeat-wave"></p>
+  <button id="defeat-retry" type="button" autofocus>Tentar novamente</button>
+</dialog>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as T from 'three';
@@ -168,7 +176,7 @@ function refresh(){
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
 }
-function reset(){waitingForFirstDefense=true;selectedDefense=undefined;blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
+function reset(){if($('game-over').open)$('game-over').close();waitingForFirstDefense=true;selectedDefense=undefined;blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
 function build(i,droppedKind,upgrade=false){
  if(done)return;
  const kind=droppedKind??selected;
@@ -194,6 +202,8 @@ $('upgrade').onclick=()=>{
  if(defense&&defense.level<3)build(selectedDefense,undefined,true);
 };
 $('reset').onclick=reset;
+$('defeat-retry').onclick=reset;
+$('game-over').addEventListener('cancel',event=>event.preventDefault());
 $('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];spawn=0;active=true;refresh();say('A onda '+wave+' chegou.')};
 function tick(dt){
  if(done||!active)return;
@@ -206,7 +216,7 @@ function tick(dt){
   else{m.x+=(x-m.x)*speed/d;m.y+=(y-m.y)*speed/d}
   if(m.k===2&&!m.flash){const i=pads.findIndex(([a,b],i)=>placed[i]&&Math.hypot(a-m.x,b-m.y)<87);if(i>=0){placed[i].jam=2.8;m.flash=true;say('Um caçador lançou uma granada de luz na torre '+(i+1)+'.')}}
  }
- if(!hp){done=true;active=false;refresh();say('A cripta caiu. Recomece para tentar outra defesa.');return}
+ if(!hp){done=true;active=false;refresh();$('defeat-wave').textContent='A fortaleza caiu na onda '+wave+'.';$('game-over').showModal();return}
  mobs=mobs.filter(m=>!m.escaped);
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;

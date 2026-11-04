@@ -1110,7 +1110,22 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     walker.scale.setScalar(scale);
     if(kind===0){
       model.traverse(part=>{
-        if(part.isMesh)part.material=new T.MeshStandardMaterial({color:0x574b49,roughness:.92});
+        if(!part.isMesh)return;
+        const geometry=part.geometry;
+        const positions=geometry.attributes.position;
+        const colors=new Float32Array(positions.count*3);
+        const fur=new T.Color(0x29343e), muzzle=new T.Color(0x67727a);
+        const color=new T.Color(), point=new T.Vector3();
+        for(let i=0;i<positions.count;i++){
+          point.fromBufferAttribute(positions,i).applyMatrix4(part.matrixWorld);
+          const x=(point.x-center.x)/height,y=(point.y-bounds.min.y)/height,z=(point.z-center.z)/height;
+          const face=T.MathUtils.smoothstep(y,.73,.91)*(1-T.MathUtils.smoothstep(Math.abs(x),.075,.18));
+          const grain=Math.sin(x*337+y*98+z*221)*Math.cos(x*173-y*36+z*284);
+          color.copy(fur).lerp(muzzle,face*.72).multiplyScalar(1+grain*.21);
+          color.toArray(colors,i*3);
+        }
+        geometry.setAttribute('color',new T.BufferAttribute(colors,3));
+        part.material=new T.MeshStandardMaterial({vertexColors:true,roughness:.97});
       });
     }
     walkingModels[kind]=walker;
@@ -1175,11 +1190,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const last=g.userData.lastStep;
         if(last)g.userData.stepDistance+=Math.hypot(m.x-last.x,m.y-last.y)/13;
         g.userData.lastStep={x:m.x,y:m.y};
-        const phase=g.userData.stepDistance*Math.PI/.78;
+        const wolf=m.k===0;
+        const phase=g.userData.stepDistance*Math.PI/(wolf?1.06:.78);
+        if(wolf){
+          g.children[0].rotation.x=.14+Math.sin(phase)*.035;
+          g.children[0].rotation.z=Math.cos(phase)*.05;
+        }
         for(const weights of legs){
           weights[0]=Math.cos(phase);
-          weights[1]=Math.max(0,Math.sin(phase));
-          weights[2]=Math.max(0,-Math.sin(phase));
+          weights[1]=Math.max(0,Math.sin(phase))*(wolf?.23:1);
+          weights[2]=Math.max(0,-Math.sin(phase))*(wolf?.38:1);
         }
       }
       const walkMixer=g.userData.walkMixer;
