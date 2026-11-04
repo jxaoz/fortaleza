@@ -6,7 +6,7 @@ import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/exam
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
-export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
@@ -1795,5 +1795,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       }
     }
     renderer.render(scene,camera);
+    if(positionTowerUpgrade){
+      const rect=canvas.getBoundingClientRect();
+      const point=new T.Vector3();
+      spots.forEach((spot,i)=>{
+        const badge=spot.userData.levelBadge;
+        positionTowerUpgrade(i,badge?.getWorldPosition(point).project(camera),rect);
+      });
+    }
   };
 }

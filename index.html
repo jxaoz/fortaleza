@@ -66,6 +66,7 @@ button[aria-pressed=true],#go{
   .stat{min-width:33px}
   .label,small{letter-spacing:.06em;font-size:9px}
 }
+.tower-upgrade{position:fixed;z-index:4;transform:translate(-50%,-100%);min-width:30px;padding:2px 6px;line-height:1.2}
 #loading-screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 42%,#2a1932,#0a0c17 72%)}
 #loading-screen[hidden]{display:none}
 .loading-panel{width:min(100%,360px);text-align:center;padding:24px}
@@ -199,12 +200,42 @@ function say(s,intro=false){
  },6000);
 }
 towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
+function upgradeCost(defense){
+ return Math.ceil(towers[defense.kind][1]*.65*defense.level);
+}
+const towerUpgradeButtons=pads.map((_,i)=>{
+ const button=document.createElement('button');
+ button.type='button';
+ button.className='tower-upgrade';
+ button.textContent='↑';
+ button.hidden=true;
+ button.onclick=()=>{
+  const defense=placed[i];
+  if(!done&&defense&&defense.level<3&&blood>=upgradeCost(defense))build(i,undefined,true);
+ };
+ document.querySelector('main').append(button);
+ return button;
+});
+function positionTowerUpgrade(i,point,rect){
+ const button=towerUpgradeButtons[i],defense=placed[i];
+ const visible=!done&&defense&&defense.level<3&&blood>=upgradeCost(defense)
+  &&point&&Math.abs(point.x)<1&&Math.abs(point.y)<1&&Math.abs(point.z)<1;
+ button.hidden=!visible;
+ if(!visible)return;
+ button.style.left=rect.left+(point.x+1)*rect.width/2+'px';
+ button.style.top=rect.top+(1-point.y)*rect.height/2-8+'px';
+ const label='Melhorar '+towers[defense.kind][0]+' por '+upgradeCost(defense)+' de sangue';
+ if(button.title!==label){
+  button.title=label;
+  button.setAttribute('aria-label',label);
+ }
+}
 function refresh(){
  const defense=placed[selectedDefense];
  const upgrade=$('upgrade');
  upgrade.disabled=done||!defense||defense.level===3;
  upgrade.textContent=defense&&defense.level<3
-  ? 'Melhorar nível · '+Math.ceil(towers[defense.kind][1]*.65*defense.level)+' sangue'
+  ? 'Melhorar nível · '+upgradeCost(defense)+' sangue'
   : 'Melhorar nível';
  $('blood').textContent=blood;
  $('health').value=hp;
@@ -224,7 +255,7 @@ function build(i,droppedKind,upgrade=false){
   refresh();
   return;
  }
- const cost=upgrade?Math.ceil(towers[current.kind][1]*.65*current.level):towers[kind][1];
+ const cost=upgrade?upgradeCost(current):towers[kind][1];
  if(blood<cost)return say('Você precisa de '+cost+' de sangue.');
  blood-=cost;
  if(upgrade)current.level++;
@@ -321,7 +352,7 @@ loadingManager.onLoad=()=>{
  }
 };
 try{
- draw=createScene($('map'),path,pads,build,$('zoom-in'),$('zoom-out'),loadingManager,$('rotate-left'),$('rotate-right'),cathedral?cathedralRoutes:null);
+ draw=createScene($('map'),path,pads,build,$('zoom-in'),$('zoom-out'),loadingManager,$('rotate-left'),$('rotate-right'),cathedral?cathedralRoutes:null,positionTowerUpgrade);
 }catch(error){
  console.error(error);
  showLoadError();
