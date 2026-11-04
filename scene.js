@@ -850,9 +850,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       }
     }
     for(const x of [-30,-25,-20,-15,-10,-5,0]){
-      const pew=mesh(scene,box,0x77533d,x,.55,-1.6,.42,.25,2.6);
+      const pew=mesh(scene,box,0x77533d,x,.55,-10.4,.42,.25,2.6);
       pew.rotation.y=.14*Math.sin(x);
-      mesh(scene,box,0x493326,x-.35,.3,-1.6,.22,.6,2.4);
+      mesh(scene,box,0x493326,x-.35,.3,-10.4,.22,.6,2.4);
     }
     const crypt=pos(...cathedralRoutes[0].at(-1));
     const groundFire=new T.LatheGeometry([
@@ -892,7 +892,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(light);
       cathedralFires.push({flame,core,light});
     }
-    for(const [x,z,angle] of [[-24,3,.7],[-10,-9,-.4],[7,10,1.4],[19,-8,2.2]]){
+    for(const [x,z,angle] of [[-24,3,.7],[-10,2,-.4],[7,10,1.4],[19,-8,2.2]]){
       const body=new T.Group();
       body.position.set(x,.03,z);
       body.rotation.y=angle;
@@ -921,7 +921,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     }
     const fireOrange=new T.MeshBasicMaterial({color:0xff5020});
     const fireGold=new T.MeshBasicMaterial({color:0xffbd53});
-    for(const [x,z] of [[-30,-10],[-16,10],[1,-5],[15,8],[33,-9]]){
+    for(const [x,z] of [[-36,-11],[-36,0],[-36,11],[-27,-13],[-16,5],[1,-8],[15,9],[33,-9]]){
       const light=new T.PointLight(0xff5725,8,5);
       light.position.set(x,.72,z);
       scene.add(light);
@@ -981,14 +981,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     mesh(scene,box,trim,entranceX,8.18,0,1.15,.24,32);
     const kit=[
       ['gothic_archway',[[805,215]],5],
-      ['candelabra',[[160,232],[300,103],[500,306],[742,115],[777,296]],1.6],
-      ['tombstone',[[120,350],[210,406],[332,361],[418,345]],1.25],
-      ['coffin',[[80,65],[165,65],[255,65],[540,65],[680,85],[95,355],[280,350],[700,365]],1.05],
+      ['candelabra',[[160,232],[300,71],[500,345],[742,115],[777,296]],1.6],
+      ['tombstone',[[120,390],[210,406],[332,392],[418,374]],1.25],
+      ['coffin',[[80,65],[165,65],[255,65],[540,65],[680,85],[95,400],[280,405],[700,365]],1.05],
       ['bat_flying',[[120,215],[260,215],[400,215],[540,215],[680,215]],.65],
-      ['pillar',[[140,46],[370,46],[635,46],[140,384],[635,384]],4],
+      ['pillar',[[140,46],[370,46],[635,46],[140,402],[635,384]],4],
       ['portrait',[[300,22],[560,408]],1.7],
       ['throne',[[752,125]],2.2],
-      ['skull',[[127,342],[345,366],[760,280]],.38],
+      ['skull',[[127,404],[345,393],[760,280]],.38],
       ['wall_sconce',[-30,-10,10,30].flatMap(x=>[-1,1].map(side=>[450+x*13,215+side*14.7*13])),1.15]
     ];
     for(const [name,placements,height] of kit){
