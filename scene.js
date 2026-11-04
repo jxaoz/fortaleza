@@ -1694,13 +1694,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const armWeight=T.MathUtils.smoothstep(lateral,.19,.32)*
           T.MathUtils.smoothstep(level,.36,.53)*(1-T.MathUtils.smoothstep(level,.72,.86));
         if(kind===0){
-          const shoulderY=bounds.min.y+height*.76;
-          const armMask=T.MathUtils.smoothstep(lateral,.105,.19)*
-            T.MathUtils.smoothstep(level,.18,.38)*(1-T.MathUtils.smoothstep(level,.77,.88));
-          const angle=armMask*1.5;
+          const shoulderY=bounds.min.y+height*.79;
+          const armMask=T.MathUtils.smoothstep(lateral,.075,.135)*
+            T.MathUtils.smoothstep(level,.10,.23)*(1-T.MathUtils.smoothstep(level,.77,.88));
+          const angle=armMask*1.85;
           const y=point.y-shoulderY,z=point.z-center.z;
           const cos=Math.cos(angle),sin=Math.sin(angle);
-          reachOffset.set(0,y*(cos-1)+z*sin,z*(cos-1)-y*sin)
+          reachOffset.set(0,y*(cos-1)+z*sin+height*.06*armMask,z*(cos-1)-y*sin)
             .applyMatrix3(inverseBasis);
           vertices.setXYZ(i,vertices.getX(i)+reachOffset.x,vertices.getY(i)+reachOffset.y,vertices.getZ(i)+reachOffset.z);
         }

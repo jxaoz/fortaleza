@@ -132,7 +132,7 @@ button[aria-pressed=true],#go{
       <div class="controls">
 
         <div class="zoom" role="group" aria-label="Câmera do mapa"><button id="rotate-left" aria-label="Girar mapa à esquerda">↶</button><button id="rotate-right" aria-label="Girar mapa à direita">↷</button><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
-        <div class="actions"><button id="speed" type="button" aria-label="Velocidade atual 1×. Clique para alternar">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
+        <div class="actions"><button id="pause" type="button" aria-pressed="false">Pausar</button><button id="speed" type="button" aria-label="Velocidade atual 1×. Clique para alternar">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
   </div>
@@ -375,9 +375,16 @@ $('speed').onclick=()=>{
  $('speed').textContent=label;
  $('speed').setAttribute('aria-label','Velocidade atual '+label+'. Clique para alternar');
 };
+let paused=false;
+$('pause').onclick=()=>{
+ paused=!paused;
+ $('pause').textContent=paused?'Retomar':'Pausar';
+ $('pause').setAttribute('aria-pressed',String(paused));
+ last=performance.now();
+};
 function frame(now){
  requestAnimationFrame(frame);
- if(document.hidden){last=now;return}
+ if(document.hidden||paused){last=now;return}
  const elapsed=now-last;
  if(elapsed<1000/32)return;
  const dt=Math.min(.05,elapsed/1000)*gameSpeed;
