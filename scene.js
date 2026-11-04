@@ -1997,18 +1997,31 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             material.alphaTest=0;
             material.alphaMap=null;
             material.depthWrite=true;
-            material.onBeforeCompile=shader=>{
-              const recolor=`
-                vec3 redSkin(vec3 color) {
-                  float dominance=color.g-max(color.r,color.b);
-                  float mask=smoothstep(.035,.19,dominance/max(color.g,.025));
-                  return mix(color,vec3(color.g*1.08,color.b*.37,color.r*.49),mask);
-                }`;
-              shader.fragmentShader=recolor+shader.fragmentShader
-                .replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor=vec4(redSkin(diffuseColor.rgb),1.0);')
-                .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance=redSkin(totalEmissiveRadiance);');
-            };
-            material.customProgramCacheKey=()=> 'giant-red-skin';
+            const source=original.map?.image;
+            if(source?.width&&source?.height){
+              const textureCanvas=document.createElement('canvas');
+              const scale=Math.min(1,1024/Math.max(source.width,source.height));
+              textureCanvas.width=Math.max(1,Math.round(source.width*scale));
+              textureCanvas.height=Math.max(1,Math.round(source.height*scale));
+              const ctx=textureCanvas.getContext('2d',{willReadFrequently:true});
+              ctx.drawImage(source,0,0,textureCanvas.width,textureCanvas.height);
+              const pixels=ctx.getImageData(0,0,textureCanvas.width,textureCanvas.height);
+              for(let i=0;i<pixels.data.length;i+=4){
+                const r=pixels.data[i],g=pixels.data[i+1],b=pixels.data[i+2];
+                const mask=T.MathUtils.smoothstep(g-b,9,38)*
+                  (1-T.MathUtils.smoothstep(r-g,7,24));
+                pixels.data[i]=r+(Math.max(r,g)*1.12-r)*mask;
+                pixels.data[i+1]=g+(b*.52-g)*mask;
+                pixels.data[i+2]=b+(b*.62-b)*mask;
+                pixels.data[i+3]=255;
+              }
+              ctx.putImageData(pixels,0,0);
+              const redMap=original.map.clone();
+              redMap.image=textureCanvas;
+              redMap.needsUpdate=true;
+              material.map=redMap;
+              if(original.emissiveMap===original.map)material.emissiveMap=redMap;
+            }
             recolored.set(original,material);
           }
           return recolored.get(original);
