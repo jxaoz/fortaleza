@@ -2125,7 +2125,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const drift=.28+age*1.7;
         plume.position.set(Math.cos(angle)*drift,2.22+age*3.8,Math.sin(angle)*drift);
         plume.scale.set(1.15+age*2.8,.65+age*1.55,1);
-        plume.material.opacity=.23*Math.sin(age*Math.PI);
+        plume.material.opacity=.32*Math.sin(age*Math.PI);
       });
     }
     const portalPulse=.5+.5*Math.sin(now*.003);
