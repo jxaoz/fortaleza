@@ -1122,6 +1122,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     mesh(scene,pedestal,0x3c3032,pedestalX,.51,end.z,2.48,.34,2.48);
     mesh(scene,pedestal,0x52413c,pedestalX,.76,end.z,2.73,.16,2.73);
     cauldron.position.set(pedestalX,.84,end.z);
+    const pedestalFlameGeometry=new T.ConeGeometry(.26,.85,8);
+    const flameMaterial=new T.MeshBasicMaterial({color:0xff5028});
+    const coreMaterial=new T.MeshBasicMaterial({color:0xffbf58});
+    for(let i=0;i<12;i++){
+      const angle=i*Math.PI/6;
+      const x=pedestalX+Math.cos(angle)*2.94;
+      const z=end.z+Math.sin(angle)*2.94;
+      const flame=new T.Mesh(pedestalFlameGeometry,flameMaterial);
+      const core=new T.Mesh(pedestalFlameGeometry,coreMaterial);
+      flame.position.set(x,.44,z);
+      core.position.set(x,.27,z);
+      core.scale.set(.58,.56,.58);
+      scene.add(flame,core);
+      cathedralFires.push({flame,core,coreHeight:.56});
+    }
     scene.add(cauldron);
     const iron=new T.MeshStandardMaterial({color:0x291c29,metalness:.62,roughness:.42,side:T.DoubleSide});
     const bowl=new T.Mesh(new T.LatheGeometry([[.82,.25],[1.47,.42],[2.12,1.26],[2.22,2.26],[2.11,2.32]]
