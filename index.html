@@ -84,11 +84,12 @@ button[aria-pressed=true],#go{
 #game-over{width:min(88vw,420px);color:#fff0de;text-align:center;padding:28px}
 #game-over::backdrop{background:#100711c9}
 #game-over h2{margin:0;color:#ff879b;font: bold 36px Georgia,serif}
-#victory{width:min(90vw,480px);padding:32px;text-align:center;color:#fff0de;border:1px solid #ba7684;background:radial-gradient(ellipse at top,#432538,#151320 75%);box-shadow:inset 0 0 0 4px #201521,0 16px 70px #000a}
-#victory::backdrop{background:#100711d9}
+#victory,#story{width:min(90vw,480px);padding:32px;text-align:center;color:#fff0de;border:1px solid #ba7684;background:radial-gradient(ellipse at top,#432538,#151320 75%);box-shadow:inset 0 0 0 4px #201521,0 16px 70px #000a}
+#victory::backdrop,#story::backdrop{background:#100711d9}
 #victory svg{width:min(100%,300px);height:auto}
-#victory h2{margin:12px 0 6px;color:#f38ca0;font:bold clamp(32px,8vw,58px) Georgia,serif;letter-spacing:.09em}
-#victory p{margin:0 0 20px;color:#ead6c3}
+#victory h2,#story h2{margin:12px 0 6px;color:#f38ca0;font:bold clamp(32px,8vw,58px) Georgia,serif;letter-spacing:.09em}
+#story p{line-height:1.6}
+#victory p,#story p{margin:0 0 20px;color:#ead6c3}
 </style>
 <section id="loading-screen" aria-label="Carregamento">
   <div class="panel loading-panel">
@@ -149,6 +150,7 @@ button[aria-pressed=true],#go{
   <p id="defeat-wave"></p>
   <button id="defeat-retry" type="button" autofocus>Tentar novamente</button>
 </dialog>
+<dialog id="story" aria-labelledby="story-title"><h2 id="story-title"></h2><p id="story-text"></p><button id="story-continue" type="button" autofocus></button></dialog>
 <dialog id="victory" aria-labelledby="victory-title"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 88" role="img" aria-label="Fortaleza Rubra">
   <path d="M5 14 40 4l35 10v28c0 17-12 30-35 42C17 72 5 59 5 42Z" fill="#171927" stroke="#aa8174" stroke-width="2"/>
   <path d="m10 17 30-8 30 8v25c0 14-10 26-30 36C20 68 10 56 10 42Z" fill="none" stroke="#634654"/>
@@ -196,6 +198,7 @@ const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caç
 const waves=dungeon?dungeonWaves:cathedral?cathedralWaves:[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let selectedDefense;
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
+let witchDestroyedDefense;
 let noticeTimer,noticeCleanup,waitingForFirstDefense;
 function say(s,intro=false){
  if(waitingForFirstDefense&&!intro)return;
@@ -263,7 +266,8 @@ function positionTowerUpgrade(i,point,rect){
   'Dano por '+(defense.kind===3?'invocação':'acerto')+' · '+
    formatDamage(defenseDamage(defense.kind,defense.level))+' → '+
    formatDamage(defenseDamage(defense.kind,defense.level+1)),
-  'Alcance e intervalo iguais',
+  'Alcance · '+formatDamage(defenseRange(defense.kind,defense.level,i))+' → '+
+   formatDamage(defenseRange(defense.kind,defense.level+1,i)),
   'Custo · '+upgradeCost(defense)+' de sangue'
  ].join('\n');
  if(button.dataset.preview!==preview)button.dataset.preview=preview;
@@ -283,7 +287,7 @@ function refresh(){
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
 }
-function reset(){if($('victory').open)$('victory').close();if($('game-over').open)$('game-over').close();waitingForFirstDefense=true;selectedDefense=undefined;blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say(dungeon?'Proteja o Caldeirão de Sangue. O destino da Fortaleza Rubra depende dele.':cathedral?'A ponte ainda é nossa. Mas o sino está tocando lá dentro. Posicione uma defesa para proteger a reserva de sangue.':'Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
+function reset(){if($('victory').open)$('victory').close();if($('game-over').open)$('game-over').close();waitingForFirstDefense=true;selectedDefense=undefined;blood=dungeon?200:155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say(dungeon?'Proteja o Caldeirão de Sangue. O destino da Fortaleza Rubra depende dele.':cathedral?'A ponte ainda é nossa. Mas o sino está tocando lá dentro. Posicione uma defesa para proteger a reserva de sangue.':'Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
 function build(i,droppedKind,upgrade=false){
  if(done)return;
  const kind=droppedKind??selected;
@@ -313,7 +317,22 @@ $('defeat-retry').onclick=reset;
 $('victory-retry').onclick=reset;
 $('next-phase').hidden=dungeon;
 if(cathedral)$('next-phase').textContent='Descer ao Subterrâneo';
-$('next-phase').onclick=()=>location.search=cathedral?'?fase=3':'?fase=2';
+function showStory(title,description,buttonLabel,onContinue){
+ $('story-title').textContent=title;
+ $('story-text').textContent=description;
+ $('story-continue').textContent=buttonLabel;
+ $('story-continue').onclick=()=>{$('story').close();onContinue?.();};
+ $('story').showModal();
+}
+$('story').addEventListener('cancel',event=>event.preventDefault());
+$('next-phase').onclick=()=>{
+ $('victory').close();
+ if(cathedral){
+  showStory('O sangue desperta','O sino se calou, mas o chão da Catedral treme. Sob a cripta, o Caldeirão de Sangue desperta, atraindo a última horda. Drácula desce com o clã para impedir que os invasores cheguem à fonte do seu poder.','Descer ao Subterrâneo',()=>location.search='?fase=3');
+ }else{
+  showStory('O sino da Catedral','A ponte resistiu. Enquanto o clã repelia o ataque, parte da horda encontrou uma passagem para a fortaleza. O sino da Catedral Afundada começa a tocar. É lá que está guardada a reserva de sangue.','Entrar na Catedral',()=>location.search='?fase=2');
+ }
+};
 if(dungeon){
  document.querySelector('.brand small').textContent='O Subterrâneo da Cripta';
  $('map').setAttribute('aria-label','Mapa do Subterrâneo da Cripta');
@@ -325,16 +344,31 @@ if(dungeon){
 }
 $('victory').addEventListener('cancel',event=>event.preventDefault());
 $('game-over').addEventListener('cancel',event=>event.preventDefault());
-$('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];spawn=0;active=true;refresh();say(cathedral&&wave===2?'O sino tocou. As catacumbas se abriram.':'A onda '+wave+' chegou.')};
+$('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];witchDestroyedDefense=false;spawn=0;active=true;refresh();say(cathedral&&wave===2?'O sino tocou. As catacumbas se abriram.':'A onda '+wave+' chegou.')};
+function defenseRange(kind,level,i){
+ const base=towers[kind][2]+(kind===0?18*(level-1):0);
+ return !cathedral&&!dungeon&&(i===6||i===7)?base*1.25:base;
+}
 function tick(dt){
  if(done||!active)return;
  spawn-=dt;
- if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoutes[queue.length%2]:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];mobs.push({k,x,y,route,seg:1,health:foes[k][1],maxHealth:foes[k][1],slow:0,flash:false});spawn=.95;if(k===4)say("O Gigante entrou na caverna!")}
+ if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoutes[queue.length%2]:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];const maxHealth=dungeon&&k!==4?Math.round(foes[k][1]*1.12):foes[k][1];mobs.push({k,x,y,route,seg:1,health:maxHealth,maxHealth,slow:0,flash:false});spawn=.95;if(k===4)say("O Gigante entrou na caverna!")}
  for(const m of mobs){
   m.slow-=dt;const [x,y]=m.route[m.seg],d=Math.hypot(x-m.x,y-m.y);
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;
   if(d<=speed){m.x=x;m.y=y;if(++m.seg===m.route.length){m.escaped=true;hp=Math.max(0,hp-(m.k===4?8:m.k===3?5:2));refresh()}}
   else{m.x+=(x-m.x)*speed/d;m.y+=(y-m.y)*speed/d}
+  if(dungeon&&wave>=3&&!witchDestroyedDefense&&m.k===3&&!m.escaped){
+   const i=pads.findIndex(([a,b],index)=>placed[index]&&Math.hypot(a-m.x,b-m.y)<65);
+   if(i>=0){
+    witchDestroyedDefense=true;
+    const name=towers[placed[i].kind][0];
+    delete placed[i];
+    if(selectedDefense===i)selectedDefense=undefined;
+    refresh();
+    say('Uma bruxa destruiu sua defesa: '+name+'.');
+   }
+  }
   if(m.k===2&&!m.flash){const i=pads.findIndex(([a,b],i)=>placed[i]&&Math.hypot(a-m.x,b-m.y)<87);if(i>=0){placed[i].jam=2.8;m.flash=true;shots.push({grenade:true,a:pads[i][0],b:pads[i][1],life:.6});say('Um caçador lançou uma granada de luz na torre '+(i+1)+'.')}}
  }
  if(!hp){done=true;active=false;refresh();$('defeat-wave').textContent='A fortaleza caiu na onda '+wave+'.';$('game-over').showModal();return}
@@ -352,8 +386,8 @@ function tick(dt){
  }
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;
-  const [, ,range,delay,,color]=towers[t.kind],[x,y]=pads[i];
-  const effectiveRange=(!cathedral&&!dungeon&&(i===6||i===7))?range*1.25:range;
+  const [,,,delay,,color]=towers[t.kind],[x,y]=pads[i];
+  const effectiveRange=defenseRange(t.kind,t.level,i);
   const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<effectiveRange).reverse();
   if(!targets.length)return;
   for(const m of (t.kind===1?targets:targets.slice(0,1))){
@@ -432,6 +466,9 @@ loadingManager.onLoad=async()=>{
   draw(placed,mobs,shots,0);
   document.querySelector('main').inert=false;
   $('loading-screen').hidden=true;
+  if(!cathedral&&!dungeon){
+   showStory('A Ponte da Cripta','Há séculos, o clã vampiro guarda a Fortaleza Rubra. Agora, lobisomens, trolls, caçadores e bruxas marcham em busca do sangue que sustenta seu poder. A ponte é a primeira linha de defesa. Use o sangue dos invasores abatidos para erguer e fortalecer suas defesas.','Defender a ponte');
+  }
   last=performance.now();
   requestAnimationFrame(frame);
  }catch(error){
