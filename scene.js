@@ -8,7 +8,7 @@ import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/ex
 
 export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 1));
   const scene = new T.Scene();
   const sky=document.createElement('canvas');
   sky.width=768;
@@ -102,9 +102,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? .65 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
   renderer.shadowMap.enabled=true;
+  renderer.shadowMap.autoUpdate=false;
+  renderer.shadowMap.needsUpdate=true;
   renderer.shadowMap.type=T.PCFShadowMap;
   moon.castShadow=true;
-  moon.shadow.mapSize.set(2048,2048);
+  moon.shadow.mapSize.set(1024,1024);
   Object.assign(moon.shadow.camera,{left:-48,right:48,top:32,bottom:-32,near:1,far:105});
   moon.shadow.normalBias=.065;
   moon.shadow.bias=-.00015;
@@ -1565,7 +1567,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
           figure.position.y=.16;
           const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
           figure.rotation.y=facing+(t.kind===2?Math.PI:0);
-          figure.traverse(part=>{if(part.isMesh){part.castShadow=true;part.receiveShadow=true;}});
+          figure.traverse(part=>{if(part.isMesh)part.receiveShadow=true;});
           g.add(figure);
           if(t.kind===2){
             g.userData.figure=figure;

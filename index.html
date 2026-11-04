@@ -354,7 +354,18 @@ $('speed').onclick=()=>{
  $('speed').textContent=label;
  $('speed').setAttribute('aria-label','Velocidade atual '+label+'. Clique para alternar');
 };
-function frame(now){const dt=Math.min(.05,(now-last)/1000)*gameSpeed;last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}
+function frame(now){
+ requestAnimationFrame(frame);
+ if(document.hidden){last=now;return}
+ const elapsed=now-last;
+ if(elapsed<1000/32)return;
+ const dt=Math.min(.05,elapsed/1000)*gameSpeed;
+ last=now;
+ tick(dt);
+ draw(placed,mobs,shots,dt);
+ shots=shots.filter(s=>(s.life-=dt)>0);
+}
+document.addEventListener('visibilitychange',()=>{last=performance.now()});
 loadingManager.onLoad=()=>{
  if(loadFailed)return;
  try{
