@@ -729,11 +729,40 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     mesh(scene,box,stoneColor,0,-.8,0,84,1.5,38);
     mesh(scene,box,stoneColor,.75,-.045,0,78.5,.12,34);
     for(const route of cathedralRoutes){
-      for(let i=1;i<route.length;i++){
-        const a=pos(...route[i-1]),b=pos(...route[i]);
-        const slab=mesh(scene,box,0x68758d,(a.x+b.x)/2,.045,(a.z+b.z)/2,a.distanceTo(b)+.08,.09,2.65);
-        slab.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
+      const points=route.map(([x,y])=>pos(x,y,.035));
+      const centerline=new T.CurvePath();
+      let start=points[0];
+      for(let i=1;i<points.length-1;i++){
+        const corner=points[i];
+        const before=corner.clone().lerp(points[i-1],.19);
+        const after=corner.clone().lerp(points[i+1],.19);
+        centerline.add(new T.LineCurve3(start,before));
+        centerline.add(new T.QuadraticBezierCurve3(before,corner,after));
+        start=after;
       }
+      centerline.add(new T.LineCurve3(start,points.at(-1)));
+      const positions=[],uv=[],indices=[];
+      const steps=Math.ceil(centerline.getLength()*4);
+      for(let i=0;i<=steps;i++){
+        const t=i/steps;
+        const p=centerline.getPoint(t), heading=centerline.getTangent(t);
+        for(const side of [-1,1]){
+          const x=p.x-heading.z*side*1.325;
+          const z=p.z+heading.x*side*1.325;
+          positions.push(x,p.y,z);
+          uv.push(x/3,z/3);
+        }
+        if(i>0){
+          const v=2*i;
+          indices.push(v-2,v-1,v,v-1,v+1,v);
+        }
+      }
+      const surface=new T.BufferGeometry();
+      surface.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+      surface.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+      surface.setIndex(indices);
+      surface.computeVertexNormals();
+      mesh(scene,surface,0x68758d,0,0,0,1,1,1);
     }
     const puddleMaterial=new T.MeshStandardMaterial({
       color:0x395e7d,transparent:true,opacity:.56,roughness:.2,depthWrite:false
@@ -868,7 +897,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       body.position.set(x,.03,z);
       body.rotation.y=angle;
       scene.add(body);
-      mesh(body,ball,0x651324,0,.015,0,1.8,.026,2.9);
+      const bloodEdge=new T.SplineCurve(Array.from({length:17},(_,i)=>{
+        const theta=i%16*Math.PI/8;
+        const ripple=1+.21*Math.sin(theta*3+angle)+.14*Math.cos(theta*5-angle);
+        return new T.Vector2(.94*ripple*Math.cos(theta),1.4*ripple*Math.sin(theta));
+      }));
+      const pool=mesh(body,new T.ShapeGeometry(new T.Shape(bloodEdge.getPoints(64))),
+        0x651324,0,.009,0,1,1,1);
+      pool.rotation.x=-Math.PI/2;
       mesh(body,ball,0x34313f,0,.24,-.07,.66,.4,.93);
       mesh(body,ball,0x48404a,0,.19,.32,.52,.31,.5);
       mesh(body,box,0x604034,0,.3,.3,.5,.11,.16);
@@ -910,6 +946,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     scene.add(shaft,shaft.target);
     const entranceX=pos(...cathedralRoutes[0][0]).x;
     const facadeHeight=8.3;
+    mesh(scene,box,stoneColor,entranceX-.57,facadeHeight/2,0,.26,facadeHeight,31.8);
     let wallStart=-15.5;
     cathedralRoutes.forEach(route=>{
       const {z}=pos(...route[0]);
