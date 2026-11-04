@@ -1078,7 +1078,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       for(const y of [.23,5.05])mesh(scene,box,0x58627b,x,y,z,2,.46,2);
     }
     surfaces.set(0x5d493e,[soil]);
-    for(const route of dungeonRoutes)drawRoute(route,0x5d493e);
+    for(const route of dungeonRoutes){
+      const [startX,startY]=route[0];
+      drawRoute([[startX-18,startY],...route],0x5d493e);
+    }
     const entrance=pos(...dungeonRoute[0]);
     mesh(scene,box,earthColors[2],entrance.x-3.6,2.25,entrance.z,1.6,5.7,7.8);
     for(let i=0;i<5;i++){
