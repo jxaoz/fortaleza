@@ -2017,7 +2017,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
               }
               ctx.putImageData(pixels,0,0);
               const redMap=original.map.clone();
-              redMap.image=textureCanvas;
+              redMap.source=new T.Source(textureCanvas);
               redMap.needsUpdate=true;
               material.map=redMap;
               if(original.emissiveMap===original.map)material.emissiveMap=redMap;
