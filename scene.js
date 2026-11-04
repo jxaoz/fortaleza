@@ -1880,7 +1880,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const inverseBasis=new T.Matrix3().setFromMatrix4(part.matrixWorld).invert();
       const forward=new T.Vector3(0,0,height*.14).applyMatrix3(inverseBasis);
       const upward=new T.Vector3(0,height*.065,0).applyMatrix3(inverseBasis);
-      const point=new T.Vector3(), reachOffset=new T.Vector3();
+      const point=new T.Vector3();
       for(let i=0;i<vertices.count;i++){
         point.fromBufferAttribute(vertices,i).applyMatrix4(part.matrixWorld);
         const weight=1-T.MathUtils.smoothstep((point.y-bounds.min.y)/height,.12,.48);
@@ -1889,25 +1889,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const lateral=Math.abs(point.x-center.x)/height;
         const armWeight=T.MathUtils.smoothstep(lateral,.19,.32)*
           T.MathUtils.smoothstep(level,.36,.53)*(1-T.MathUtils.smoothstep(level,.72,.86));
-        if(kind===0){
-          const shoulderY=bounds.min.y+height*.79;
-          const armMask=T.MathUtils.smoothstep(lateral,.075,.135)*
-            T.MathUtils.smoothstep(level,.10,.23)*(1-T.MathUtils.smoothstep(level,.77,.88));
-          const angle=armMask*1.85;
-          const y=point.y-shoulderY,z=point.z-center.z;
-          const cos=Math.cos(angle),sin=Math.sin(angle);
-          reachOffset.set(0,y*(cos-1)+z*sin+height*.06*armMask,z*(cos-1)-y*sin)
-            .applyMatrix3(inverseBasis);
-          vertices.setXYZ(i,vertices.getX(i)+reachOffset.x,vertices.getY(i)+reachOffset.y,vertices.getZ(i)+reachOffset.z);
-        }
         forward.clone().multiplyScalar(side*(weight-(kind===0?.22:.55)*armWeight)).toArray(stride,i*3);
         upward.clone().multiplyScalar(weight).toArray(side<0?leftLift:rightLift,i*3);
-      }
-      if(kind===0){
-        vertices.needsUpdate=true;
-        geometry.computeVertexNormals();
-        geometry.computeBoundingBox();
-        geometry.computeBoundingSphere();
       }
       geometry.morphTargetsRelative=true;
       geometry.morphAttributes.position=[stride,leftLift,rightLift].map(data=>new T.BufferAttribute(data,3));
