@@ -384,14 +384,14 @@ $('pause').onclick=()=>{
 };
 function frame(now){
  requestAnimationFrame(frame);
- if(document.hidden||paused){last=now;return}
+ if(document.hidden){last=now;return}
  const elapsed=now-last;
  if(elapsed<1000/32)return;
- const dt=Math.min(.05,elapsed/1000)*gameSpeed;
+ const dt=paused?0:Math.min(.05,elapsed/1000)*gameSpeed;
  last=now;
- tick(dt);
+ if(!paused)tick(dt);
  draw(placed,mobs,shots,dt);
- shots=shots.filter(s=>(s.life-=dt)>0);
+ if(!paused)shots=shots.filter(s=>(s.life-=dt)>0);
 }
 document.addEventListener('visibilitychange',()=>{last=performance.now()});
 loadingManager.onLoad=async()=>{
