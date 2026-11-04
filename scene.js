@@ -613,6 +613,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   for(const offset of [-1.65,0,1.65]){
     victorianWindow(keepX-4.23,5.85,gate.z+offset,-Math.PI/2);
   }
+  new GLTFLoader(loadingManager).load(new URL('./assets/caixao.glb', import.meta.url).href,({scene:model})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const size=bounds.getSize(new T.Vector3());
+    const center=bounds.getCenter(new T.Vector3());
+    const scale=1.65/Math.max(size.x,size.y,size.z);
+    model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
+    for(const [x,z,angle] of [[3.1,7.7,.2],[5,8.5,-.18],[7.1,8.1,.35],[6.2,-8.5,-.3]]){
+      const coffin=new T.Group();
+      coffin.add(model.clone(true));
+      coffin.position.set(gate.x+x,-.05,gate.z+z);
+      coffin.rotation.y=angle;
+      coffin.scale.setScalar(scale);
+      scene.add(coffin);
+    }
+  });
   const bloodLight=new T.PointLight(0xff2458,58,11);
   bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
   const forest=[];
