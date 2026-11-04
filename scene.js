@@ -284,7 +284,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   for(const [left,right] of [[-42,bankLeft],[bankRight,42]]){
     mesh(bridgeScenery,box,0x46546a,(left+right)/2,-.8,0,right-left,1.5,37);
   }
-  mesh(bridgeScenery,box,0x427b94,riverX,-.85,0,4,.12,37);
+  mesh(bridgeScenery,box,0x427b94,riverX,-1.17,0,4,.76,37);
   const riverTime={value:0};
   if(!cathedralRoutes){
     const ripples=new T.Mesh(new T.PlaneGeometry(4,37),new T.ShaderMaterial({
