@@ -967,11 +967,15 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
 
   });
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
-  const bowGeometry=new T.TubeGeometry(new T.CatmullRomCurve3([
-    new T.Vector3(0,-.57,.16),new T.Vector3(0,-.31,-.05),
-    new T.Vector3(0,0,-.15),new T.Vector3(0,.31,-.05),new T.Vector3(0,.57,.16)
-  ]),12,.033,5,false);
-  const bowMaterial=new T.MeshStandardMaterial({color:0x634333,roughness:.83});
+  let archerBow;
+  new GLTFLoader(loadingManager).load(new URL('./assets/arco-atirador.glb', import.meta.url).href,({scene:model})=>{
+    const mount=new T.Group();
+    mount.rotation.set(Math.PI/2,Math.PI/2,0,'YXZ');
+    mount.scale.setScalar(.455);
+    model.position.set(-.2369,-.00787,-.00776);
+    mount.add(model);
+    archerBow=mount;
+  });
   const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
   function badgeMaterial(draw){
     const tile=document.createElement('canvas');
@@ -1023,7 +1027,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             const bow=new T.Group();
             bow.position.set(.15,1.42,-.78);
             figure.add(bow);
-            bow.add(new T.Mesh(bowGeometry,bowMaterial));
+            const grip=new T.Group();
+            grip.position.z=-.15;
+            if(archerBow)grip.add(archerBow.clone(true));
+            bow.add(grip);
             const stringGeometry=new T.BufferGeometry().setFromPoints([
               new T.Vector3(0,-.57,.16),new T.Vector3(0,0,.16),new T.Vector3(0,.57,.16)
             ]);
@@ -1063,7 +1070,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
     fitted.add(model);
     fitted.scale.setScalar(2.65/height);
-    fitted.rotation.y=Math.PI;
+    fitted.rotation.y=0;
     witchWalk=animations.find(clip=>clip.name==='walk-loop');
     witchModel=fitted;
   },undefined,error=>console.warn('Falha ao carregar o Bruxa.',error));
