@@ -6,7 +6,8 @@ import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/exam
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
-export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade, dungeonRoute=null) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade, dungeonRoutes=null) {
+  const dungeonRoute=dungeonRoutes?.[0];
   const renderer = new T.WebGLRenderer({canvas, antialias:false});
   renderer.setPixelRatio(Math.min(devicePixelRatio, .85));
   const scene = new T.Scene();
@@ -736,6 +737,42 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     forest.push({x,z,height,variant:2});
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
+  function drawStoneRoute(route){
+    const points=route.map(([x,y])=>pos(x,y,.035));
+    const centerline=new T.CurvePath();
+    let start=points[0];
+    for(let i=1;i<points.length-1;i++){
+      const corner=points[i];
+      const before=corner.clone().lerp(points[i-1],.19);
+      const after=corner.clone().lerp(points[i+1],.19);
+      centerline.add(new T.LineCurve3(start,before));
+      centerline.add(new T.QuadraticBezierCurve3(before,corner,after));
+      start=after;
+    }
+    centerline.add(new T.LineCurve3(start,points.at(-1)));
+    const positions=[],uv=[],indices=[];
+    const steps=Math.ceil(centerline.getLength()*4);
+    for(let i=0;i<=steps;i++){
+      const t=i/steps;
+      const p=centerline.getPoint(t), heading=centerline.getTangent(t);
+      for(const side of [-1,1]){
+        const x=p.x-heading.z*side*1.325;
+        const z=p.z+heading.x*side*1.325;
+        positions.push(x,p.y,z);
+        uv.push(x/3,z/3);
+      }
+      if(i>0){
+        const v=2*i;
+        indices.push(v-2,v-1,v,v-1,v+1,v);
+      }
+    }
+    const surface=new T.BufferGeometry();
+    surface.setAttribute('position',new T.Float32BufferAttribute(positions,3));
+    surface.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
+    surface.setIndex(indices);
+    surface.computeVertexNormals();
+    mesh(scene,surface,0x68758d,0,0,0,1,1,1);
+  }
   const cathedralFires=[];
   const cathedralBats=[];
   if(cathedralRoutes){
@@ -753,42 +790,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     surfaces.set(stoneColor,[masonry,3]);
     mesh(scene,box,stoneColor,0,-.8,0,84,1.5,38);
     mesh(scene,box,stoneColor,.75,-.045,0,78.5,.12,34);
-    for(const route of cathedralRoutes){
-      const points=route.map(([x,y])=>pos(x,y,.035));
-      const centerline=new T.CurvePath();
-      let start=points[0];
-      for(let i=1;i<points.length-1;i++){
-        const corner=points[i];
-        const before=corner.clone().lerp(points[i-1],.19);
-        const after=corner.clone().lerp(points[i+1],.19);
-        centerline.add(new T.LineCurve3(start,before));
-        centerline.add(new T.QuadraticBezierCurve3(before,corner,after));
-        start=after;
-      }
-      centerline.add(new T.LineCurve3(start,points.at(-1)));
-      const positions=[],uv=[],indices=[];
-      const steps=Math.ceil(centerline.getLength()*4);
-      for(let i=0;i<=steps;i++){
-        const t=i/steps;
-        const p=centerline.getPoint(t), heading=centerline.getTangent(t);
-        for(const side of [-1,1]){
-          const x=p.x-heading.z*side*1.325;
-          const z=p.z+heading.x*side*1.325;
-          positions.push(x,p.y,z);
-          uv.push(x/3,z/3);
-        }
-        if(i>0){
-          const v=2*i;
-          indices.push(v-2,v-1,v,v-1,v+1,v);
-        }
-      }
-      const surface=new T.BufferGeometry();
-      surface.setAttribute('position',new T.Float32BufferAttribute(positions,3));
-      surface.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
-      surface.setIndex(indices);
-      surface.computeVertexNormals();
-      mesh(scene,surface,0x68758d,0,0,0,1,1,1);
-    }
+    for(const route of cathedralRoutes)drawStoneRoute(route);
     const puddleMaterial=new T.MeshStandardMaterial({
       color:0x395e7d,transparent:true,opacity:.56,roughness:.2,depthWrite:false
     });
@@ -1070,12 +1072,27 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       mesh(scene,box,0x68758d,x,2.6,z,1.4,5.2,1.4);
       for(const y of [.23,5.05])mesh(scene,box,0x58627b,x,y,z,2,.46,2);
     }
-    for(let i=1;i<dungeonRoute.length;i++){
-      const a=pos(...dungeonRoute[i-1]),b=pos(...dungeonRoute[i]);
-      const pathStone=mesh(scene,box,0x89869a,(a.x+b.x)/2,.01,(a.z+b.z)/2,a.distanceTo(b)+.12,.09,2.65);
-      pathStone.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
-    }
+    for(const route of dungeonRoutes)drawStoneRoute(route);
     const entrance=pos(...dungeonRoute[0]);
+    for(let i=0;i<=10;i++){
+      const angle=Math.PI*i/10;
+      const jamb=mesh(scene,rock,earthColors[i%3],entrance.x-1.15,
+        .6+Math.sin(angle)*3.35,entrance.z+Math.cos(angle)*2.65,1.45,1.2,1.16);
+      jamb.rotation.set(i*.57,i*.3,angle);
+    }
+    const moonShaftMaterial=new T.MeshBasicMaterial({color:0xdce9ff,transparent:true,
+      opacity:.065,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending});
+    for(const [x,z] of [[-21,-10],[5,11],[24,-9]]){
+      const shaft=new T.SpotLight(0xe6efff,340,26,.25,.85);
+      shaft.position.set(x-2,9,z);
+      shaft.target.position.set(x+2,0,z*.65);
+      scene.add(shaft,shaft.target);
+      const direction=shaft.position.clone().sub(shaft.target.position);
+      const mist=new T.Mesh(new T.ConeGeometry(1.35,direction.length(),16,1,true),moonShaftMaterial);
+      mist.position.copy(shaft.target.position).addScaledVector(direction,.5);
+      mist.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
+      scene.add(mist);
+    }
     const dungeonPortal=portal.clone(true);
     dungeonPortal.position.set(entrance.x-.7,1.5,entrance.z);
     scene.add(dungeonPortal);
@@ -1091,6 +1108,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     rim.rotation.x=-Math.PI/2;
     rim.position.y=2.27;
     cauldron.add(rim);
+    const bronze=new T.MeshStandardMaterial({color:0x885d39,metalness:.7,roughness:.37});
+    for(const [radius,y] of [[1.57,.53],[2.08,1.43],[2.2,2.04]]){
+      const band=new T.Mesh(new T.TorusGeometry(radius,.064,8,40),bronze);
+      band.rotation.x=-Math.PI/2;
+      band.position.y=y;
+      cauldron.add(band);
+    }
     cauldronBlood=mesh(cauldron,cylinder,0xc8143e,0,2.15,0,2.08,.1,2.08,true);
     cauldronAura=new T.Sprite(new T.SpriteMaterial({map:glowTexture,color:0xff174d,opacity:.55,
       blending:T.AdditiveBlending,depthWrite:false}));
@@ -1116,6 +1140,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       if(i%2===0)mesh(bones,ball,0x463038,0,.015,.09,.68,.035,1.9);
     });
     const loader=new GLTFLoader(loadingManager);
+    loader.load(new URL('./assets/catedral-skull.glb',import.meta.url).href,({scene:model})=>{
+      const bounds=new T.Box3().setFromObject(model);
+      const scale=.48/bounds.getSize(new T.Vector3()).y;
+      model.scale.setScalar(scale);
+      model.position.copy(bounds.getCenter(new T.Vector3()).multiplyScalar(-scale));
+      for(let i=0;i<16;i++){
+        const angle=i*Math.PI/8;
+        const mount=new T.Group();
+        mount.position.set(Math.sin(angle)*2.19,1.84,Math.cos(angle)*2.19);
+        mount.rotation.y=angle;
+        mount.add(model.clone(true));
+        cauldron.add(mount);
+      }
+    });
     loader.load(new URL('./assets/catedral-coffin.glb',import.meta.url).href,({scene:model})=>{
       const bounds=new T.Box3().setFromObject(model);
       const size=bounds.getSize(new T.Vector3());

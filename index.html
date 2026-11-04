@@ -158,10 +158,10 @@ button[aria-pressed=true],#go{
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as T from 'three';
-import {createScene} from "./scene.js?v=025e40f";
+import {createScene} from "./scene.js?v=dungeon-loop";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
-import {dungeonRoute,dungeonPads,dungeonWaves} from "./dungeon.js";
+import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js";
 const phaseParams=new URLSearchParams(location.search);
 const cathedral=phaseParams.get('fase')==='2';
 const dungeon=phaseParams.get('fase')==='3';
@@ -306,7 +306,7 @@ $('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];spawn=0;act
 function tick(dt){
  if(done||!active)return;
  spawn-=dt;
- if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoute:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];mobs.push({k,x,y,route,seg:1,health:foes[k][1],maxHealth:foes[k][1],slow:0,flash:false});spawn=.95}
+ if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoutes[queue.length%2]:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];mobs.push({k,x,y,route,seg:1,health:foes[k][1],maxHealth:foes[k][1],slow:0,flash:false});spawn=.95}
  for(const m of mobs){
   m.slow-=dt;const [x,y]=m.route[m.seg],d=Math.hypot(x-m.x,y-m.y);
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;
@@ -417,7 +417,7 @@ loadingManager.onLoad=async()=>{
  }
 };
 try{
- draw=createScene($('map'),path,pads,build,$('zoom-in'),$('zoom-out'),loadingManager,$('rotate-left'),$('rotate-right'),cathedral?cathedralRoutes:null,positionTowerUpgrade,dungeon?dungeonRoute:null);
+ draw=createScene($('map'),path,pads,build,$('zoom-in'),$('zoom-out'),loadingManager,$('rotate-left'),$('rotate-right'),cathedral?cathedralRoutes:null,positionTowerUpgrade,dungeon?dungeonRoutes:null);
 }catch(error){
  console.error(error);
  showLoadError();
