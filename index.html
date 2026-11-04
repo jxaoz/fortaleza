@@ -66,8 +66,21 @@ button[aria-pressed=true],#go{
   .stat{min-width:33px}
   .label,small{letter-spacing:.06em;font-size:9px}
 }
+#loading-screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 42%,#2a1932,#0a0c17 72%)}
+#loading-screen[hidden]{display:none}
+.loading-panel{width:min(100%,360px);text-align:center;padding:24px}
+.loading-panel p{color:#eed5d4}
+.loading-panel progress{width:100%;accent-color:#d45170}
 </style>
-<main>
+<section id="loading-screen" aria-label="Carregamento">
+  <div class="panel loading-panel">
+    <h1>Fortaleza Rubra</h1>
+    <p id="loading-message" role="status">Carregando modelos e texturas…</p>
+    <progress id="loading-progress" aria-label="Progresso do carregamento"></progress>
+    <button id="loading-retry" hidden>Tentar novamente</button>
+  </div>
+</section>
+<main inert>
   <canvas id="map" width="900" height="430" aria-label="Mapa da Ponte da Cripta" title="Arraste com o botão esquerdo para mover e com o direito para girar. Use a roda para aproximar."></canvas>
   <div class="overlay">
     <div class="top">
@@ -103,6 +116,7 @@ button[aria-pressed=true],#go{
 </main>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
+import * as T from 'three';
 import {createScene} from "./scene.js";
 const $=id=>document.getElementById(id);
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
@@ -198,6 +212,42 @@ function tick(dt){
  mobs=mobs.filter(m=>{if(m.health>0)return true;blood+=foes[m.k][3];refresh();return false});
  if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();say(done?'Vitória! A cripta resistiu às cinco ondas.':'Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
 }
-const draw = createScene($('map'), path, pads, build, $('zoom-in'), $('zoom-out'));
-reset();let last=performance.now();function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+const loadingManager=new T.LoadingManager();
+const progress=$('loading-progress');
+const message=$('loading-message');
+let loadFailed=false;
+function showLoadError(){
+ loadFailed=true;
+ progress.hidden=true;
+ message.textContent='Não foi possível carregar todos os arquivos do jogo.';
+ $('loading-retry').hidden=false;
+}
+$('loading-retry').onclick=()=>location.reload();
+loadingManager.onError=showLoadError;
+loadingManager.onProgress=(_,loaded,total)=>{
+ progress.max=total;
+ progress.value=loaded;
+};
+let draw,last;
+function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}
+loadingManager.onLoad=()=>{
+ if(loadFailed)return;
+ try{
+  reset();
+  draw(placed,mobs,shots,0);
+  document.querySelector('main').inert=false;
+  $('loading-screen').hidden=true;
+  last=performance.now();
+  requestAnimationFrame(frame);
+ }catch(error){
+  console.error(error);
+  showLoadError();
+ }
+};
+try{
+ draw=createScene($('map'),path,pads,build,$('zoom-in'),$('zoom-out'),loadingManager);
+}catch(error){
+ console.error(error);
+ showLoadError();
+}
 </script>

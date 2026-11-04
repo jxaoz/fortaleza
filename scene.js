@@ -3,7 +3,7 @@ import * as T from 'three';
 import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 
-export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
@@ -260,7 +260,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     groundTexture.needsUpdate=true;
   }
   paintGrass();
-  new T.TextureLoader().load(new URL('./assets/grass-ground.jpg', import.meta.url).href, texture=>{
+  new T.TextureLoader(loadingManager).load(new URL('./assets/grass-ground.jpg', import.meta.url).href, texture=>{
     paintGrass(texture.image);
     texture.dispose();
   });
@@ -397,7 +397,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     pool.add(wet);
   }
   const entrance=road[0];
-  new GLTFLoader().load(new URL('./assets/caverna.glb', import.meta.url).href,({scene:model})=>{
+  new GLTFLoader(loadingManager).load(new URL('./assets/caverna.glb', import.meta.url).href,({scene:model})=>{
     const cave=new T.Group();
     cave.add(model);
     cave.rotation.y=Math.PI/2;
@@ -519,7 +519,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   windowArch.quadraticCurveTo(-.44,1.36,-.44,.91);
   windowArch.closePath();
   const windowGeometry=new T.ShapeGeometry(windowArch);
-  const stainedGlass=new T.TextureLoader().load(new URL('./assets/vitral.png', import.meta.url).href);
+  const stainedGlass=new T.TextureLoader(loadingManager).load(new URL('./assets/vitral.png', import.meta.url).href);
   stainedGlass.colorSpace=T.SRGBColorSpace;
   const paneGeometry=windowGeometry.clone();
   const paneUv=paneGeometry.attributes.uv;
@@ -544,7 +544,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     mesh(frame,box,0x58627b,0,-.045,.03,1.04,.12,.23);
   }
   const keepX=gate.x+8.2;
-  new GLTFLoader().load(new URL('./assets/torre-central.glb', import.meta.url).href,({scene:model})=>{
+  new GLTFLoader(loadingManager).load(new URL('./assets/torre-central.glb', import.meta.url).href,({scene:model})=>{
     const bounds=new T.Box3().setFromObject(model);
     const size=bounds.getSize(new T.Vector3());
     const center=bounds.getCenter(new T.Vector3());
@@ -649,7 +649,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   }
   function loadTrees(url,variant){
-    new GLTFLoader().load(url,({scene:model})=>{
+    new GLTFLoader(loadingManager).load(url,({scene:model})=>{
       if(variant===2){
         const leaves=model.getObjectByName('leaves');
         if(leaves?.isMesh){
@@ -707,7 +707,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
   let gargoyleModel;
-  new STLLoader().load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
+  new STLLoader(loadingManager).load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
     geometry.rotateX(-Math.PI/2);
     geometry.computeBoundingBox();
     const bounds=geometry.boundingBox;
@@ -740,7 +740,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let alchemistModel;
-  new STLLoader().load(new URL('./assets/alquimista.stl', import.meta.url).href,geometry=>{
+  new STLLoader(loadingManager).load(new URL('./assets/alquimista.stl', import.meta.url).href,geometry=>{
     geometry.computeBoundingBox();
     const bounds=geometry.boundingBox;
     const center=bounds.getCenter(new T.Vector3());
@@ -804,7 +804,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     }
   },undefined,error=>console.warn('Falha ao carregar o Alquimista.',error));
   let sniperModel;
-  new GLTFLoader().load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
+  new GLTFLoader(loadingManager).load(new URL('./assets/vam2.glb', import.meta.url).href, ({scene: model}) => {
     const bounds = new T.Box3().setFromObject(model);
     const size = bounds.getSize(new T.Vector3());
     const extent = Math.max(size.x, size.y, size.z);
@@ -1082,7 +1082,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
     disc.scale.y=t?.jam>0?.64:.35;
   }
   let trollModel;
-  new GLTFLoader().load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
+  new GLTFLoader(loadingManager).load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
     for(const name of ['Goblins_Sword','Goblins_Shield']){
       model.getObjectByName(name)?.removeFromParent();
     }
