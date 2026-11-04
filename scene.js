@@ -99,8 +99,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? 1.1 : 3.0));
-  const moon = new T.DirectionalLight(0xc4dbff, 2.6);
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? .65 : 3.0));
+  const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
@@ -711,7 +711,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     forest.push({x,z,height,variant:2});
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
-  let cathedralPortal;
+  const cathedralFires=[];
   const cathedralBats=[];
   if(cathedralRoutes){
     const masonry=pattern('#41434b',.12,(ctx,random)=>{
@@ -727,7 +727,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const stoneColor=0xaca6b2, trim=0x71667a;
     surfaces.set(stoneColor,[masonry,3]);
     mesh(scene,box,stoneColor,0,-.8,0,84,1.5,38);
-    mesh(scene,box,stoneColor,0,-.045,0,77,.12,34);
+    mesh(scene,box,stoneColor,.75,-.045,0,78.5,.12,34);
     for(const route of cathedralRoutes){
       for(let i=1;i<route.length;i++){
         const a=pos(...route[i-1]),b=pos(...route[i]);
@@ -809,10 +809,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         }
       }
       // Continuous stone footing and a finished cornice make the nave feel enclosed.
-      mesh(scene,box,trim,5,.18,wallZ,80,.36,1.2);
-      mesh(scene,box,trim,5,8.18,wallZ,80,.24,1.2);
+      mesh(scene,box,trim,.5,.18,wallZ,79,.36,1.2);
+      mesh(scene,box,trim,.5,8.18,wallZ,79,.24,1.2);
     }
-    for(const x of [-38.5,40]){
+    for(const x of [40]){
       mesh(scene,box,stoneColor,x,3.55,0,1.05,7.1,31);
       mesh(scene,box,trim,x,7.2,0,1.24,.35,31.5);
       mesh(scene,box,trim,x,.18,0,1.23,.36,31.4);
@@ -826,34 +826,61 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       mesh(scene,box,0x493326,x-.35,.3,-1.6,.22,.6,2.4);
     }
     const crypt=pos(...cathedralRoutes[0].at(-1));
-    mesh(scene,box,stoneColor,crypt.x+3,2.8,0,5,5.6,10);
-    mesh(scene,box,0x721737,crypt.x+.45,1.8,0,.12,3.6,2.7,true);
+    const rear=40;
+    const keepWidth=rear-crypt.x-.5;
+    mesh(scene,box,stoneColor,rear-keepWidth/2,3.6,0,keepWidth,7.2,13);
+    mesh(scene,box,stoneColor,rear-keepWidth/2,7.2,0,keepWidth, .55,13.5);
+    for(const side of [-1,1]){
+      mesh(scene,box,stoneColor,crypt.x+1.5,4.3,side*5.3,3.1,8.6,3.3);
+      for(const dz of [-1.1,1.1]){
+        mesh(scene,box,stoneColor,crypt.x+.35,8.8,side*5.3+dz,.8,.8,.85);
+      }
+    }
+    for(const z of [-3,-1.5,0,1.5,3]){
+      mesh(scene,box,stoneColor,crypt.x+.42,7.65,z,.75,.75,.82);
+    }
+    mesh(scene,box,0x721737,crypt.x+.43,1.8,0,.12,3.6,2.7,true);
+    for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-3],[35,0,-12],[35,0,12],
+      [crypt.x-1,0,-5],[crypt.x-1,0,5],[crypt.x+1.5,8.6,-5.3],[crypt.x+1.5,8.6,5.3]]){
+      mesh(scene,cylinder,trim,x,y+.32,z,.74,.64,.74);
+      const flame=new T.Mesh(new T.ConeGeometry(.32,.95,8),new T.MeshBasicMaterial({color:0xff6330}));
+      flame.position.set(x,y+.99,z);
+      scene.add(flame);
+      const core=new T.Mesh(new T.ConeGeometry(.17,.57,7),new T.MeshBasicMaterial({color:0xffd177}));
+      core.position.set(x,y+.88,z+.09);
+      scene.add(core);
+      const light=new T.PointLight(0xff5725,9,5.5);
+      light.position.set(x,y+1,z);
+      scene.add(light);
+      cathedralFires.push({flame,core,light});
+    }
     const reserveLight=new T.PointLight(0xff285a,42,11);
     reserveLight.position.set(crypt.x-1,2,0);
     scene.add(reserveLight);
-    const shaft=new T.SpotLight(0xb8d6ff,380,65,.29,.68);
+    const shaft=new T.SpotLight(0xb8d6ff,180,65,.29,.68);
     shaft.position.set(5,24,-8);
     shaft.target.position.set(1,0,-2);
     scene.add(shaft,shaft.target);
-    const entrance=pos(...cathedralRoutes[1][0]);
-    cathedralPortal=new T.Group();
-    cathedralPortal.position.set(entrance.x,2,entrance.z);
-    cathedralPortal.rotation.y=Math.PI/2;
-    const portalSurface=new T.Mesh(new T.CircleGeometry(1.15,36),
-      new T.MeshBasicMaterial({color:0x25103e,side:T.DoubleSide}));
-    portalSurface.scale.y=1.55;
-    cathedralPortal.add(portalSurface);
-    for(let i=0;i<3;i++){
-      const ring=new T.Mesh(new T.TorusGeometry(.62+i*.21,.045,8,38,Math.PI*1.55),
-        new T.MeshBasicMaterial({color:[0xcf65ff,0x8d35de,0xf1a1ff][i]}));
-      ring.position.z=.03;
-      ring.rotation.z=i*2;
-      cathedralPortal.add(ring);
-    }
-    cathedralPortal.visible=false;
-    scene.add(cathedralPortal);
+    const entranceX=pos(...cathedralRoutes[0][0]).x;
+    let wallStart=-15.5;
+    cathedralRoutes.forEach(route=>{
+      const {z}=pos(...route[0]);
+      const edge=z-1.65;
+      mesh(scene,box,stoneColor,entranceX,3.55,(wallStart+edge)/2,1.05,7.1,edge-wallStart);
+      mesh(scene,box,stoneColor,entranceX,5.6,z,1.05,3,3.3);
+      for(const side of [-1,1]){
+        mesh(scene,box,trim,entranceX+.45,2,z+side*1.65,.68,4,.42);
+      }
+      mesh(scene,box,trim,entranceX+.45,4,z,.68,.4,3.7);
+      const doorwayPortal=portal.clone();
+      doorwayPortal.position.set(entranceX+.48,1.94,z);
+      doorwayPortal.scale.set(1.66,1.98,1);
+      scene.add(doorwayPortal);
+      wallStart=z+1.65;
+    });
+    mesh(scene,box,stoneColor,entranceX,3.55,(wallStart+15.5)/2,1.05,7.1,15.5-wallStart);
     const kit=[
-      ['gothic_archway',[[20,382],[805,215]],5],
+      ['gothic_archway',[[805,215]],5],
       ['candelabra',[[160,232],[300,103],[500,306],[742,115],[777,296]],1.6],
       ['tombstone',[[120,350],[210,406],[332,361],[418,345]],1.25],
       ['coffin',[[80,65],[165,65],[255,65],[540,65],[680,85],[95,355],[280,350],[700,365]],1.05],
@@ -1501,12 +1528,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const phase=(now+i*1130)%(3700+i*870);
       material.opacity=phase<110||phase>270&&phase<385?0:.92;
     });
-    if(cathedralPortal){
-      cathedralPortal.visible ||= mobs.some(m=>m.k===0);
-      cathedralPortal.children.slice(1).forEach((ring,i)=>{
-        ring.rotation.z=now*(i%2?.002:-.0014)+i*2;
-      });
-    }
+    cathedralFires.forEach(({flame,core,light},i)=>{
+      const flicker=Math.sin(now*.014+i)*.14+Math.sin(now*.023+i*2)*.09;
+      flame.scale.set(1-flicker*.6,1+flicker,1-flicker*.6);
+      flame.rotation.z=flicker*.45;
+      core.scale.y=1-flicker*.6;
+      light.intensity=9+flicker*9;
+    });
     cathedralBats.forEach(({prop,mixer,center},i)=>{
       const angle=now*.0012+i*2.1;
       prop.position.set(center.x+4*Math.cos(angle),4.2+.55*Math.sin(angle*2+i),4.7*Math.sin(angle));
