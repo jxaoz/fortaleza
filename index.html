@@ -161,7 +161,7 @@ import * as T from 'three';
 import {createScene} from "./scene.js?v=dungeon-loop";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
-import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js";
+import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js?v=dungeon-loop";
 const phaseParams=new URLSearchParams(location.search);
 const cathedral=phaseParams.get('fase')==='2';
 const dungeon=phaseParams.get('fase')==='3';
