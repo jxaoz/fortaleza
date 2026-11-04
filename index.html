@@ -49,7 +49,13 @@ button[aria-pressed=true],#go{
 }
 #shop,.zoom,.actions{display:flex;gap:5px}
 #shop{margin:5px 0 7px}
-#shop button{display:grid;text-align:left;gap:2px;flex:1}
+#shop button{position:relative;display:grid;text-align:left;gap:2px;flex:1}
+#shop button:is(:hover,:focus-visible)::after{
+ content:attr(data-bio);position:absolute;bottom:calc(100% + 7px);left:0;z-index:6;
+ width:160px;max-width:45vw;padding:8px 10px;border:1px solid #906974;border-radius:5px;
+ background:#251b2c;color:#fff1df;box-shadow:0 4px 12px #0008;
+ font-size:12px;font-weight:500;line-height:1.4;pointer-events:none
+}
 #shop button small::before{content:"";display:inline-block;width:6px;height:8px;margin-right:5px;border-radius:65% 0 65% 65%;transform:rotate(-45deg);background:linear-gradient(#ff8a9d,#a81b3c);vertical-align:-1px}
 #shop button small{letter-spacing:.02em;text-transform:none;color:#ffc1b1}
 .controls{display:grid;justify-items:end;gap:6px}
@@ -204,7 +210,13 @@ function say(s,intro=false){
   noticeCleanup=setTimeout(()=>{notice.textContent='';},450);
  },6000);
 }
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
+const defenseBios=[
+ 'Sentinela de pedra do clã. Dispara raios rápidos contra um inimigo por vez.',
+ 'Mestre das poções. Atinge todos os inimigos ao alcance e reduz a velocidade deles.',
+ 'Vigia da fortaleza. Usa a besta para acertar um inimigo de longe com alto dano.',
+ 'Necromante do clã. Invoca dois lacaios de sangue que perseguem o mesmo alvo.'
+];
+towers.forEach(([name,cost],i)=>{const b=document.createElement('button');b.dataset.bio=defenseBios[i];b.setAttribute('aria-description',defenseBios[i]);const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
 function defenseDamage(kind,level){
  return towers[kind][4]*(1+.55*(level-1));
 }
