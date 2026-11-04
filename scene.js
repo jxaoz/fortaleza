@@ -1053,8 +1053,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     disc.visible=!customModel||t.jam>0;
     disc.scale.y=t?.jam>0?.64:.35;
   }
-  let werewolfModel, werewolfWalk;
-  new GLTFLoader(loadingManager).load(new URL('./assets/lobisomem.glb', import.meta.url).href,({scene:model,animations})=>{
+  let witchModel, witchWalk;
+  new GLTFLoader(loadingManager).load(new URL('./assets/bruxa.glb', import.meta.url).href,({scene:model,animations})=>{
     const bounds=new T.Box3().setFromObject(model);
     const height=bounds.getSize(new T.Vector3()).y;
     if(!Number.isFinite(height)||height<=0) return;
@@ -1062,11 +1062,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const fitted=new T.Group();
     model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
     fitted.add(model);
-    fitted.scale.setScalar(2.35/height);
+    fitted.scale.setScalar(2.65/height);
     fitted.rotation.y=Math.PI;
-    werewolfWalk=animations.find(clip=>clip.name==='walk-loop');
-    werewolfModel=fitted;
-  },undefined,error=>console.warn('Falha ao carregar o Lobisomem.',error));
+    witchWalk=animations.find(clip=>clip.name==='walk-loop');
+    witchModel=fitted;
+  },undefined,error=>console.warn('Falha ao carregar o Bruxa.',error));
   let trollModel;
   new GLTFLoader(loadingManager).load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
     for(const name of ['Goblins_Sword','Goblins_Shield']){
@@ -1112,12 +1112,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
     const g=new T.Group(), c=colors[m.k];
-    if(m.k===0&&werewolfModel){
-      const model=cloneRig(werewolfModel);
+    if(m.k===3&&witchModel){
+      const model=cloneRig(witchModel);
       g.add(model);
-      if(werewolfWalk){
+      if(witchWalk){
         const mixer=new T.AnimationMixer(model);
-        mixer.clipAction(werewolfWalk).play();
+        mixer.clipAction(witchWalk).play();
         g.userData.walkMixer=mixer;
       }
       scene.add(g);
@@ -1177,7 +1177,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const last=g.userData.lastStep;
         if(last){
           const distance=Math.hypot(m.x-last.x,m.y-last.y)/13;
-          walkMixer.update(distance*werewolfWalk.duration/2.1);
+          walkMixer.update(distance*witchWalk.duration/2.1);
         }
         g.userData.lastStep={x:m.x,y:m.y};
       }
