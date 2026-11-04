@@ -1175,7 +1175,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     cauldronLight=new T.PointLight(0xff194e,40,13);
     cauldronLight.position.y=3.3;
     cauldron.add(cauldronLight);
-    const remains=[[ -28,9,.6],[-18,-11,1.5],[-8,7,-.8],[4,-9,.3],[16,12,2.1],[24,-8,-.5]];
+    const remains=[[ -28,9,.6],[-18,-11,1.5],[-8,3,-.8],[4,-9,.3],[16,12,2.1],[24,-8,-.5]];
     remains.forEach(([x,z,angle],i)=>{
       const bones=new T.Group();
       bones.position.set(x,.09,z);
@@ -1961,7 +1961,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const emberMaterial=new T.MeshBasicMaterial({color:0xff7233});
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
-    const g=new T.Group(), c=colors[m.k];
+    const g=new T.Group(), c=colors[m.k]??0x75564a;
     if(m.k===3&&witchModel){
       const model=cloneRig(witchModel);
       g.add(model);
@@ -1973,8 +1973,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(g);
       return g;
     }
-    if(walkingModels[m.k]){
-      g.add(walkingModels[m.k].clone(true));
+    const walker=walkingModels[m.k===4?1:m.k];
+    if(walker){
+      const figure=walker.clone(true);
+      if(m.k===4){
+        figure.scale.multiplyScalar(2.15);
+        for(const x of [-.23,.23])mesh(g,ball,0xff572f,x,5.17,.56,.07,.07,.07,true);
+      }
+      g.add(figure);
       g.userData.legs=[];
       g.traverse(part=>{
         if(part.morphTargetInfluences)g.userData.legs.push(part.morphTargetInfluences);
@@ -1984,7 +1990,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(g);
       return g;
     }
-    const size=[.72,1.05,.62,.78][m.k];
+    const size=[.72,1.05,.62,.78,2.15][m.k];
     mesh(g,ball,c,0,size*1.45,0,size*.78,size,size*.58);
     mesh(g,ball,c,0,size*2.36,.17,size*.52,size*.53,size*.49);
     if(m.k===0)for(const x of [-.23,.23])mesh(g,cone,c,x,size*2.9,.12,.17,.45,.18);
@@ -2009,7 +2015,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}
     for(const m of mobs){
       const previous=actors.get(m);
-      if(!previous||(walkingModels[m.k]&&!previous.userData.customWalker)){
+      if(!previous||(walkingModels[m.k===4?1:m.k]&&!previous.userData.customWalker)){
         if(previous)scene.remove(previous);
         actors.set(m,makeActor(m));
       }
