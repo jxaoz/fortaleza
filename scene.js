@@ -1,10 +1,12 @@
+import { FBXLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/FBXLoader.js';
+import { OBJLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/OBJLoader.js';
 import { STLLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/STLLoader.js';
 import * as T from 'three';
 import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
 import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
-export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager) {
+export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new T.Scene();
@@ -83,6 +85,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     zoomIn.disabled = camera.zoom >= 5;
     zoomOut.disabled = camera.zoom <= .75;
   }
+  function rotateMap(angle){
+    orbit.theta+=angle;
+    camera.position.setFromSpherical(orbit).add(focus);
+    camera.lookAt(focus);
+  }
+  rotateLeft.onclick=()=>rotateMap(-Math.PI/12);
+  rotateRight.onclick=()=>rotateMap(Math.PI/12);
   zoomIn.onclick = () => zoomBy(1.15);
   zoomOut.onclick = () => zoomBy(1 / 1.15);
   canvas.addEventListener('wheel', event => {
@@ -90,7 +99,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     event.preventDefault();
     zoomBy(event.deltaY < 0 ? 1.15 : 1 / 1.15);
   }, {passive: false});
-  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, 3.0));
+  scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? 1.1 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, 2.6);
   moon.position.set(-15, 32, -15);
   scene.add(moon);
@@ -253,15 +262,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     m.position.set(x,y,z); m.scale.set(w,h,d); parent.add(m);
     return m;
   }
+  const bridgeScenery=new T.Group();
+  scene.add(bridgeScenery);
+  bridgeScenery.visible=!cathedralRoutes;
   const riverX=pos(577,0).x;
   const bankLeft=riverX-2,bankRight=riverX+2;
   const rampLength=1.25, rise=.78;
   const bridgeZ=pos(0,275).z;
   for(const [left,right] of [[-42,bankLeft],[bankRight,42]]){
-    mesh(scene,box,0x46546a,(left+right)/2,-.8,0,right-left,1.5,37);
+    mesh(bridgeScenery,box,0x46546a,(left+right)/2,-.8,0,right-left,1.5,37);
   }
-  mesh(scene,box,0x427b94,riverX,-.85,0,4,.12,37);
+  mesh(bridgeScenery,box,0x427b94,riverX,-.85,0,4,.12,37);
   function bridgeHeight(x,y){
+    if(cathedralRoutes)return 0;
     if(Math.abs(y-bridgeZ)>1.65) return 0;
     return rise*T.MathUtils.clamp((2+rampLength-Math.abs(x-riverX))/rampLength,0,1);
   }
@@ -292,7 +305,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     });
     const uv=surface.attributes.uv;
     for(let i=0;i<uv.count;i++) uv.setXY(i,uv.getX(i)/3,uv.getY(i)/3);
-    const roadway=mesh(scene,surface,color,0,flat ? -.035 : .15,0,1,1,1);
+    const roadway=mesh(bridgeScenery,surface,color,0,flat ? -.035 : .15,0,1,1,1);
     roadway.rotation.x=Math.PI/2;
     if(flat) roadway.material.side=T.DoubleSide;
   }
@@ -308,19 +321,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const boards=Math.ceil(length/.35);
     for(let i=0;i<boards;i++){
       const t=(i+.5)/boards;
-      const plank=mesh(scene,box,0x927452,T.MathUtils.lerp(start,end,t),
+      const plank=mesh(bridgeScenery,box,0x927452,T.MathUtils.lerp(start,end,t),
         .06+T.MathUtils.lerp(low,high,t),bridgeZ,length/boards-.012,.18,3.1);
       plank.rotation.z=angle;
     }
     for(const side of [-1,1]){
-      const rail=mesh(scene,box,0x927452,(start+end)/2,.62+(low+high)/2,
+      const rail=mesh(bridgeScenery,box,0x927452,(start+end)/2,.62+(low+high)/2,
         bridgeZ+side*1.48,length+.05,.15,.15);
       rail.rotation.z=angle;
     }
   }
   for(const x of [leftJoin,bankLeft,riverX,bankRight,rightJoin]){
     for(const side of [-1,1]){
-      mesh(scene,box,0x927452,x,.38+bridgeHeight(x,bridgeZ),bridgeZ+side*1.48,.16,.7,.16);
+      mesh(bridgeScenery,box,0x927452,x,.38+bridgeHeight(x,bridgeZ),bridgeZ+side*1.48,.16,.7,.16);
     }
   }
   const bloodStain=new T.MeshStandardMaterial({color:0x480c1b,roughness:.32,side:T.DoubleSide});
@@ -347,7 +360,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const pool=new T.Mesh(new T.ShapeGeometry(outline),bloodStain);
     pool.rotation.x=-Math.PI/2;
     pool.position.set(center.x,height,center.z);
-    scene.add(pool);
+    bridgeScenery.add(pool);
     const wet=new T.Mesh(pool.geometry,bloodWet);
     wet.scale.set(.71,.68,1);
     wet.position.z=.001;
@@ -366,14 +379,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     cave.scale.setScalar(scale);
     cave.position.set(entrance.x+.18-bounds.max.x*scale,-.05-bounds.min.y*scale,
       entrance.z-center.z*scale);
-    scene.add(cave);
+    bridgeScenery.add(cave);
   },undefined,error=>console.warn('Falha ao carregar a caverna.',error));
   const portal=new T.Group();
   portal.position.set(entrance.x-.85,1.27,entrance.z);
   portal.rotation.y=Math.PI/2;
   portal.scale.set(2.12,1.62,1);
   portal.position.y=1.53;
-  scene.add(portal);
+  bridgeScenery.add(portal);
   const vortex=new T.ShaderMaterial({
     transparent:true,
     side:T.DoubleSide,
@@ -401,30 +414,30 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   portal.add(new T.Mesh(new T.CircleGeometry(1,64),vortex));
   const portalLight=new T.PointLight(0x792bd0,5,4);
   portalLight.position.set(entrance.x-.5,1.3,entrance.z);
-  scene.add(portalLight);
+  bridgeScenery.add(portalLight);
   const wallX=bankRight+.24;
   for(const [start,end] of [[-18.5,bridgeZ-1.55],[bridgeZ+1.55,18.5]]){
-    mesh(scene,box,0x68758d,wallX,-.10,(start+end)/2,.85,4.5,end-start);
+    mesh(bridgeScenery,box,0x68758d,wallX,-.10,(start+end)/2,.85,4.5,end-start);
     for(let z=start+.48;z<end-.25;z+=1.2){
-      mesh(scene,box,0x58627b,wallX,2.34,z,.94,.44,.65);
+      mesh(bridgeScenery,box,0x58627b,wallX,2.34,z,.94,.44,.65);
     }
   }
   const rearWallX=41.76;
   for(const z of [-18.26,18.26]){
-    mesh(scene,box,0x68758d,(wallX+rearWallX)/2,-.10,z,rearWallX-wallX,4.5,.85);
+    mesh(bridgeScenery,box,0x68758d,(wallX+rearWallX)/2,-.10,z,rearWallX-wallX,4.5,.85);
     for(let x=wallX+.8;x<rearWallX-.45;x+=1.2){
-      mesh(scene,box,0x58627b,x,2.34,z,.65,.44,.94);
+      mesh(bridgeScenery,box,0x58627b,x,2.34,z,.65,.44,.94);
     }
   }
-  mesh(scene,box,0x68758d,rearWallX,-.10,0,.85,4.5,37);
+  mesh(bridgeScenery,box,0x68758d,rearWallX,-.10,0,.85,4.5,37);
   for(let z=-18.05;z<=18.05;z+=1.2){
-    mesh(scene,box,0x58627b,rearWallX,2.34,z,.94,.44,.65);
+    mesh(bridgeScenery,box,0x58627b,rearWallX,2.34,z,.94,.44,.65);
   }
   const gate=pos(...path.at(-1));
   const castleMoonlight=new T.SpotLight(0xb4ceff,210,29,Math.PI/5,.75,2);
   castleMoonlight.position.set(gate.x-5,17,gate.z-6);
   castleMoonlight.target.position.set(gate.x+5,4,gate.z);
-  scene.add(castleMoonlight,castleMoonlight.target);
+  bridgeScenery.add(castleMoonlight,castleMoonlight.target);
   const wingShape=new T.Shape();
   wingShape.moveTo(0,0);
   wingShape.lineTo(.58,.18);
@@ -445,19 +458,19 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       body.add(hinge);
       return hinge;
     });
-    scene.add(body);
+    bridgeScenery.add(body);
     return {body,wings};
   });
   for(const z of [gate.z-3.3,gate.z+3.3]){
-    mesh(scene,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
-    for(const x of [-1.25,1.25])for(const dz of [-1,1])mesh(scene,box,0x58627b,gate.x+1+x,7.3,z+dz,.8,.85,.8);
-    mesh(scene,cylinder,0x7e2947,gate.x-1.2,1.1,z, .52,2.1,.52);
-    mesh(scene,box,0xff3b63,gate.x-1.75,1.45,z,.12,.85,.26,true);
+    mesh(bridgeScenery,box,0x68758d,gate.x+1,3.5,z,3.6,7,3.2);
+    for(const x of [-1.25,1.25])for(const dz of [-1,1])mesh(bridgeScenery,box,0x58627b,gate.x+1+x,7.3,z+dz,.8,.85,.8);
+    mesh(bridgeScenery,cylinder,0x7e2947,gate.x-1.2,1.1,z, .52,2.1,.52);
+    mesh(bridgeScenery,box,0xff3b63,gate.x-1.75,1.45,z,.12,.85,.26,true);
   }
-  mesh(scene,box,0x454861,gate.x+1,4.25,gate.z,3.3,1.4,5);
-  mesh(scene,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
-  mesh(scene,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
-  mesh(scene,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
+  mesh(bridgeScenery,box,0x454861,gate.x+1,4.25,gate.z,3.3,1.4,5);
+  mesh(bridgeScenery,box,0x89869a,gate.x+.39,.045,gate.z,.85,.19,3.8);
+  mesh(bridgeScenery,box,0x491427,gate.x+.6,1.8,gate.z,.3,3.6,3.8);
+  mesh(bridgeScenery,ball,0xff315f,gate.x+.39,2.65,gate.z,.28,.42,.42,true);
   const towerOutline=new T.Shape([
     [-1.4,-.93],[-.93,-1.4],[.93,-1.4],[1.4,-.93],
     [1.4,.93],[.93,1.4],[-.93,1.4],[-1.4,.93]
@@ -488,7 +501,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const frame=new T.Group();
     frame.position.set(x,y,z);
     frame.rotation.y=rotation;
-    scene.add(frame);
+    bridgeScenery.add(frame);
     mesh(frame,windowGeometry,0x9b8590,0,0,0,1,1,1);
     const pane=new T.Mesh(paneGeometry,paneMaterial);
     pane.position.set(0,.1,.025);
@@ -539,27 +552,27 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       part.geometry=geometry;
       part.material=stoneMaterial;
     });
-    scene.add(centralTower);
+    bridgeScenery.add(centralTower);
   },undefined,error=>console.warn('Falha ao carregar a torre central.',error));
-  mesh(scene,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
-  mesh(scene,box,0x58627b,keepX,8.15,gate.z,8.9,.45,9.3);
+  mesh(bridgeScenery,box,0x68758d,keepX,4.1,gate.z,8.4,8.3,8.8);
+  mesh(bridgeScenery,box,0x58627b,keepX,8.15,gate.z,8.9,.45,9.3);
   for(const side of [-1,1]){
     for(let offset=-3.6;offset<=3.6;offset+=1.2){
-      mesh(scene,box,0x58627b,keepX+offset,8.68,gate.z+side*4.4,.62,.75,.72);
-      mesh(scene,box,0x58627b,keepX+side*4.2,8.68,gate.z+offset,.72,.75,.62);
+      mesh(bridgeScenery,box,0x58627b,keepX+offset,8.68,gate.z+side*4.4,.62,.75,.72);
+      mesh(bridgeScenery,box,0x58627b,keepX+side*4.2,8.68,gate.z+offset,.72,.75,.62);
     }
     for(const x of [gate.x+4.4,gate.x+11.9]){
       const z=gate.z+side*5.1;
-      mesh(scene,towerGeometry,0x68758d,x,-.05,z,1,1,1);
-      mesh(scene,box,0x58627b,x,9.9,z,3.15,.5,3.15);
+      mesh(bridgeScenery,towerGeometry,0x68758d,x,-.05,z,1,1,1);
+      mesh(bridgeScenery,box,0x58627b,x,9.9,z,3.15,.5,3.15);
       for(const dx of [-1.1,0,1.1]){
         for(const dz of [-1.1,0,1.1]){
-          if(dx||dz) mesh(scene,box,0x58627b,x+dx,10.45,z+dz,.55,.72,.55);
+          if(dx||dz) mesh(bridgeScenery,box,0x58627b,x+dx,10.45,z+dz,.55,.72,.55);
         }
       }
       for(const height of [3.6,6.8,8.6]){
-        mesh(scene,box,0x454861,x-1.43,height,z,.12,1.05,.46);
-        mesh(scene,box,0x1e1725,x-1.5,height+.05,z,.06,.78,.18);
+        mesh(bridgeScenery,box,0x454861,x-1.43,height,z,.12,1.05,.46);
+        mesh(bridgeScenery,box,0x1e1725,x-1.5,height+.05,z,.06,.78,.18);
       }
     }
     for(const x of [keepX-1.9,keepX,keepX+1.9]){
@@ -582,12 +595,32 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       coffin.position.set(gate.x+x,-.05,gate.z+z);
       coffin.rotation.y=angle;
       coffin.scale.setScalar(scale);
-      scene.add(coffin);
+      bridgeScenery.add(coffin);
     }
   });
   const bloodLight=new T.PointLight(0xff2458,58,11);
-  bloodLight.position.set(gate.x-1,2.6,gate.z);scene.add(bloodLight);
+  bloodLight.position.set(gate.x-1,2.6,gate.z);bridgeScenery.add(bloodLight);
   const forest=[];
+  const glowCanvas=document.createElement('canvas');
+  glowCanvas.width=glowCanvas.height=64;
+  const glowPaint=glowCanvas.getContext('2d');
+  const glowGradient=glowPaint.createRadialGradient(32,32,0,32,32,32);
+  glowGradient.addColorStop(0,'rgba(255,255,255,1)');
+  glowGradient.addColorStop(.24,'rgba(255,255,255,.48)');
+  glowGradient.addColorStop(1,'rgba(255,255,255,0)');
+  glowPaint.fillStyle=glowGradient;
+  glowPaint.fillRect(0,0,64,64);
+  const glowTexture=new T.CanvasTexture(glowCanvas);
+  const forestEyes=[[-24,-14,1.15],[-20.7,-12.8,.85],[-17.8,-14,1.55]].map(([x,z,y])=>{
+    const material=new T.SpriteMaterial({map:glowTexture,color:0xff3657,transparent:true,depthWrite:false});
+    for(const offset of [-.18,.18]){
+      const eye=new T.Sprite(material);
+      eye.position.set(x+offset,y,z);
+      eye.scale.set(.62,.4,1);
+      bridgeScenery.add(eye);
+    }
+    return material;
+  });
   for(let i=0;i<44;i++){
     const x=((i*137%810)-405)/10, z=i%2 ? -15-(i%3) : 14+(i%4);
     if(Math.abs(x-riverX)<3.4) continue;
@@ -668,7 +701,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         });
         if(overlapsRoad||Math.abs(x-riverX)<canopyRadius+2) return;
         instance.scale.setScalar(scale);
-        scene.add(instance);
+        bridgeScenery.add(instance);
       });
     },undefined,error=>console.warn('Falha ao carregar a árvore.',error));
   }
@@ -678,6 +711,194 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     forest.push({x,z,height,variant:2});
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
+  let cathedralPortal;
+  const cathedralBats=[];
+  if(cathedralRoutes){
+    const masonry=pattern('#41434b',.12,(ctx,random)=>{
+      ctx.drawImage(stone.image,0,0,128,128);
+      ctx.fillStyle='#570f24b0';
+      for(let i=0;i<11;i++){
+        const x=random()*128,y=random()*128;
+        ctx.beginPath();
+        ctx.ellipse(x,y,1+random()*7,1+random()*4,random()*Math.PI,0,Math.PI*2);
+        ctx.fill();
+      }
+    });
+    const stoneColor=0xaca6b2, trim=0x71667a;
+    surfaces.set(stoneColor,[masonry,3]);
+    mesh(scene,box,stoneColor,0,-.8,0,84,1.5,38);
+    mesh(scene,box,stoneColor,0,-.045,0,77,.12,34);
+    for(const route of cathedralRoutes){
+      for(let i=1;i<route.length;i++){
+        const a=pos(...route[i-1]),b=pos(...route[i]);
+        const slab=mesh(scene,box,0x68758d,(a.x+b.x)/2,.045,(a.z+b.z)/2,a.distanceTo(b)+.08,.09,2.65);
+        slab.rotation.y=-Math.atan2(b.z-a.z,b.x-a.x);
+      }
+    }
+    const puddleMaterial=new T.MeshStandardMaterial({
+      color:0x395e7d,transparent:true,opacity:.56,roughness:.2,depthWrite:false
+    });
+    for(const [x,z,width,depth] of [[-30,7,3,1.7],[-23,-10,1.5,1],[-12,8,5,2.5],
+      [-3,-11,3,2],[7,6,1.6,.9],[16,-10,5.5,2.7],[24,10,2.7,1.4],[33,-7,2,1.1]]){
+      const outline=new T.Shape();
+      for(let i=0;i<32;i++){
+        const angle=i/32*Math.PI*2;
+        const edge=1+.12*Math.sin(angle*3+x)+.08*Math.cos(angle*5);
+        const px=Math.cos(angle)*width*.5*edge;
+        const py=Math.sin(angle)*depth*.5*edge;
+        if(i===0)outline.moveTo(px,py);
+        else outline.lineTo(px,py);
+      }
+      outline.closePath();
+      const puddle=new T.Mesh(new T.ShapeGeometry(outline),puddleMaterial);
+      puddle.rotation.x=-Math.PI/2;
+      puddle.position.set(x,.024,z);
+      scene.add(puddle);
+    }
+    const glass=new T.TextureLoader(loadingManager).load(new URL('./assets/vitral.png',import.meta.url).href);
+    glass.colorSpace=T.SRGBColorSpace;
+    const pane=new T.MeshBasicMaterial({map:glass,color:0xffa6b8,side:T.DoubleSide});
+    for(const z of [-16,16]){
+      const wallZ=z+(z<0?.58:-.58);
+      for(let index=0;index<8;index++){
+        const x=-35+index*10;
+        mesh(scene,box,stoneColor,x,3.55,wallZ,10,7.1,.95);
+        mesh(scene,box,trim,x,7.12,wallZ,10.2,.3,1.12);
+        for(const edge of [-4.55,4.55]){
+          mesh(scene,box,trim,x+edge,3.7,wallZ,1.05,7.4,1.18);
+          mesh(scene,box,stoneColor,x+edge,7.65,wallZ,1.38,.72,1.4);
+          mesh(scene,box,trim,x+edge,8.06,wallZ,1.12,.18,1.14);
+        }
+        // Full masonry panels frame each stained-glass window.
+        mesh(scene,box,stoneColor,x,1.05,wallZ,8.95,2.1,1.02);
+        mesh(scene,box,stoneColor,x,7.9,wallZ,8.95,.92,1.02);
+        for(const face of [-1,1]){
+          const window=new T.Mesh(new T.PlaneGeometry(3.55,3.75),pane);
+          window.position.set(x,4.45,wallZ+face*.53);
+          scene.add(window);
+          for(const dx of [-1.92,1.92]){
+            mesh(scene,box,trim,x+dx,4.45,wallZ+face*.55,.16,4.05,.15);
+          }
+          for(const y of [2.48,6.43]){
+            mesh(scene,box,trim,x,y,wallZ+face*.55,4.05,.18,.15);
+          }
+        }
+      }
+      for(let index=0;index<8;index++){
+        const x=-35+index*10;
+        const direction=z<0?1:-1;
+        const beam=new T.Mesh(new T.PlaneGeometry(4.4,7),
+          new T.ShaderMaterial({
+            transparent:true,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,
+            vertexShader: `varying vec2 beamUv;
+              void main(){beamUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
+            fragmentShader: `varying vec2 beamUv;
+              void main(){
+                float edge=smoothstep(0.,.23,beamUv.x)*(1.-smoothstep(.77,1.,beamUv.x));
+                float fade=smoothstep(0.,.65,beamUv.y);
+                gl_FragColor=vec4(.9,.07,.14,.12*edge*fade);
+              }`
+          }));
+        for(const height of [2.6,4.4,6.2]){
+          const sheet=beam.clone();
+          const reach=6;
+          sheet.scale.y=Math.hypot(height,reach)/7;
+          sheet.rotation.x=-direction*Math.atan2(reach,height);
+          sheet.position.set(x,height/2,wallZ+direction*(.6+reach/2));
+          scene.add(sheet);
+        }
+      }
+      // Continuous stone footing and a finished cornice make the nave feel enclosed.
+      mesh(scene,box,trim,5,.18,wallZ,80,.36,1.2);
+      mesh(scene,box,trim,5,8.18,wallZ,80,.24,1.2);
+    }
+    for(const x of [-38.5,40]){
+      mesh(scene,box,stoneColor,x,3.55,0,1.05,7.1,31);
+      mesh(scene,box,trim,x,7.2,0,1.24,.35,31.5);
+      mesh(scene,box,trim,x,.18,0,1.23,.36,31.4);
+      for(const z of [-10,0,10]){
+        mesh(scene,box,trim,x,3.55,z,1.45,7.1,1.15);
+      }
+    }
+    for(const x of [-30,-25,-20,-15,-10,-5,0]){
+      const pew=mesh(scene,box,0x77533d,x,.55,-1.6,.42,.25,2.6);
+      pew.rotation.y=.14*Math.sin(x);
+      mesh(scene,box,0x493326,x-.35,.3,-1.6,.22,.6,2.4);
+    }
+    const crypt=pos(...cathedralRoutes[0].at(-1));
+    mesh(scene,box,stoneColor,crypt.x+3,2.8,0,5,5.6,10);
+    mesh(scene,box,0x721737,crypt.x+.45,1.8,0,.12,3.6,2.7,true);
+    const reserveLight=new T.PointLight(0xff285a,42,11);
+    reserveLight.position.set(crypt.x-1,2,0);
+    scene.add(reserveLight);
+    const shaft=new T.SpotLight(0xb8d6ff,380,65,.29,.68);
+    shaft.position.set(5,24,-8);
+    shaft.target.position.set(1,0,-2);
+    scene.add(shaft,shaft.target);
+    const entrance=pos(...cathedralRoutes[1][0]);
+    cathedralPortal=new T.Group();
+    cathedralPortal.position.set(entrance.x,2,entrance.z);
+    cathedralPortal.rotation.y=Math.PI/2;
+    const portalSurface=new T.Mesh(new T.CircleGeometry(1.15,36),
+      new T.MeshBasicMaterial({color:0x25103e,side:T.DoubleSide}));
+    portalSurface.scale.y=1.55;
+    cathedralPortal.add(portalSurface);
+    for(let i=0;i<3;i++){
+      const ring=new T.Mesh(new T.TorusGeometry(.62+i*.21,.045,8,38,Math.PI*1.55),
+        new T.MeshBasicMaterial({color:[0xcf65ff,0x8d35de,0xf1a1ff][i]}));
+      ring.position.z=.03;
+      ring.rotation.z=i*2;
+      cathedralPortal.add(ring);
+    }
+    cathedralPortal.visible=false;
+    scene.add(cathedralPortal);
+    const kit=[
+      ['gothic_archway',[[20,382],[805,215]],5],
+      ['candelabra',[[160,232],[300,103],[500,306],[742,115],[777,296]],1.6],
+      ['tombstone',[[120,350],[210,406],[332,361],[418,345]],1.25],
+      ['coffin',[[80,65],[165,65],[255,65],[540,65],[680,85],[95,355],[280,350],[700,365]],1.05],
+      ['bat_flying',[[120,215],[260,215],[400,215],[540,215],[680,215]],.65],
+      ['pillar',[[140,46],[370,46],[635,46],[140,384],[635,384]],4],
+      ['portrait',[[300,22],[560,408]],1.7],
+      ['throne',[[752,125]],2.2],
+      ['skull',[[127,342],[345,366],[760,280]],.38],
+      ['wall_sconce',[-30,-10,10,30].flatMap(x=>[-1,1].map(side=>[450+x*13,215+side*14.7*13])),1.15]
+    ];
+    for(const [name,placements,height] of kit){
+      new GLTFLoader(loadingManager).load(new URL('./assets/catedral-'+name+'.glb',import.meta.url).href,({scene:model,animations})=>{
+        const bounds=new T.Box3().setFromObject(model);
+        const center=bounds.getCenter(new T.Vector3());
+        const scale=height/(bounds.max.y-bounds.min.y);
+        model.scale.setScalar(scale);
+        model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);
+        for(const [x,y] of placements){
+          const prop=new T.Group();
+          prop.position.copy(pos(x,y));
+          if(name==='wall_sconce'||name==='portrait'){
+            prop.position.y=name==='wall_sconce'?2.65:2.3;
+            if(prop.position.z>0)prop.rotation.y=Math.PI;
+          }
+          if(name==='gothic_archway')prop.rotation.y=Math.PI/2;
+          const instance=name==='bat_flying'?cloneRig(model):model.clone(true);
+          prop.add(instance);
+          scene.add(prop);
+          if(name==='bat_flying'){
+            const mixer=new T.AnimationMixer(instance);
+            if(animations.length)mixer.clipAction(animations[0]).play();
+            cathedralBats.push({prop,mixer,center:prop.position.clone()});
+          }
+          if(name==='candelabra'||name==='wall_sconce'){
+            const flame=prop.position.clone();
+            flame.y+=height;
+            mesh(scene,ball,0xff3559,flame.x,flame.y,flame.z,.1,.18,.1,true);
+            const light=new T.PointLight(0xff254b,7,5);
+            light.position.copy(flame);
+            scene.add(light);
+          }
+        }
+      });
+    }
+  }
   let gargoyleModel;
   new STLLoader(loadingManager).load(new URL('./assets/gargula.stl', import.meta.url).href, geometry=>{
     geometry.rotateX(-Math.PI/2);
@@ -708,7 +929,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       if(!hit) continue;
       const z=hit.point.z+.035;
       mesh(gargoyleModel,ball,0xff173e,x,eyeHeight,z,.064,.046,.035,true);
-      mesh(gargoyleModel,ball,0xffa0a7,x,eyeHeight,z+.028,.029,.022,.015,true);
+      mesh(gargoyleModel,ball,0xffa0a7,x,eyeHeight,z+.028,.029,.022,.015,true).name="laser-eye";
     }
   },undefined,error=>console.warn('Falha ao carregar a Gárgula.',error));
   let alchemistModel;
@@ -729,6 +950,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const ember=new T.Color(0xd62608), flame=new T.Color(0xffdf71);
     const color=new T.Color();
     const finish=new Float32Array(vertices.count*2);
+    const flameBounds=new T.Box3();
+    const flameVertex=new T.Vector3();
     for(let i=0;i<vertices.count;i++){
       const x=vertices.getX(i);
       const y=vertices.getY(i);
@@ -742,6 +965,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         Math.abs(v-.53)<.018||Math.abs(v-.72)<.016);
       const grain=Math.sin(x*147+y*83+z*119)*Math.cos(z*161-y*103);
       if(fire){
+        flameBounds.expandByPoint(flameVertex.set(x,y,z));
         const heat=T.MathUtils.clamp((.94-v)*3.4+.34+.23*Math.sin(x*30+z*22+y*17),0,1);
         color.copy(ember).lerp(flame,heat);
       }else{
@@ -766,6 +990,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const vampire=new T.Mesh(geometry,material);
     alchemistModel=new T.Group();
     alchemistModel.add(vampire);
+    const flameOrigin=new T.Object3D();
+    flameOrigin.name="alchemist-flame-origin";
+    flameBounds.getCenter(flameOrigin.position);
+    alchemistModel.add(flameOrigin);
     const eyeRay=new T.Raycaster();
     for(const u of [.605,.675]){
       const x=(u-.5)*size.x*scale;
@@ -887,7 +1115,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
-    if(i===6||i===7){
+    if(!cathedralRoutes&&(i===6||i===7)){
       mesh(scene,box,0x68758d,p.x,.72,p.z,3.8,4.54,3.8);
       mesh(scene,box,0x58627b,p.x,3.11,p.z,4.1,.24,4.1);
       for(const dx of [-1.72,1.72]){
@@ -967,16 +1195,24 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
 
   });
   const towerColors=[0xa4b8d6,0xc069ea,0xe88696];
-  let archerBow;
-  new GLTFLoader(loadingManager).load(new URL('./assets/arco-atirador.glb', import.meta.url).href,({scene:model})=>{
+  let crossbow;
+  // The supplied FBX references a base-color image that was not bundled.
+  const crossbowSwatch=document.createElement('canvas');
+  crossbowSwatch.width=crossbowSwatch.height=1;
+  const swatchPaint=crossbowSwatch.getContext('2d');
+  swatchPaint.fillStyle='#72513b';
+  swatchPaint.fillRect(0,0,1,1);
+  const crossbowColor=crossbowSwatch.toDataURL();
+  loadingManager.setURLModifier(url=>url.endsWith('_None_BaseColor.png')?crossbowColor:url);
+  new FBXLoader(loadingManager).load(new URL('./assets/crossbow.fbx',import.meta.url).href,model=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const size=bounds.getSize(new T.Vector3());
     const mount=new T.Group();
-    mount.rotation.set(Math.PI/2,Math.PI/2,0,'YXZ');
-    mount.scale.setScalar(.455);
-    model.position.set(-.2369,-.00787,-.00776);
+    model.position.sub(bounds.getCenter(new T.Vector3()));
+    mount.scale.setScalar(1.05/Math.max(size.x,size.y,size.z));
     mount.add(model);
-    archerBow=mount;
+    crossbow=mount;
   });
-  const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
   function badgeMaterial(draw){
     const tile=document.createElement('canvas');
     tile.width=128;
@@ -1029,13 +1265,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             figure.add(bow);
             const grip=new T.Group();
             grip.position.z=-.15;
-            if(archerBow)grip.add(archerBow.clone(true));
+            if(crossbow)grip.add(crossbow.clone(true));
             bow.add(grip);
-            const stringGeometry=new T.BufferGeometry().setFromPoints([
-              new T.Vector3(0,-.57,.16),new T.Vector3(0,0,.16),new T.Vector3(0,.57,.16)
-            ]);
-            bow.add(new T.Line(stringGeometry,bowStringMaterial));
-            figure.userData.bowString=stringGeometry.attributes.position;
             figure.userData.armMeshes=[];
             figure.traverse(part=>{
               if(part.morphTargetInfluences) figure.userData.armMeshes.push(part);
@@ -1057,8 +1288,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const badgeScale=1.65 * camera.zoom ** -1.07;
     g.userData.levelBadge?.scale.set(1.75*badgeScale,.44*badgeScale,1);
     mark.visible=!t;
-    disc.visible=!customModel||t.jam>0;
-    disc.scale.y=t?.jam>0?.64:.35;
+    disc.visible=!customModel;
+
   }
   let witchModel, witchWalk;
   new GLTFLoader(loadingManager).load(new URL('./assets/bruxa.glb', import.meta.url).href,({scene:model,animations})=>{
@@ -1151,6 +1382,26 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const grenadeEffects=new Map();
   const shockwave=new T.RingGeometry(.78,1,40);
   const actors=new Map(), beams=new Map();
+  const arrowWood=new T.TextureLoader(loadingManager).load(new URL('./assets/arrow-wood.jpg',import.meta.url).href);
+  arrowWood.colorSpace=T.SRGBColorSpace;
+  const arrowMaterial=new T.MeshStandardMaterial({map:arrowWood,roughness:.8});
+  let arrowModel;
+  new OBJLoader(loadingManager).load(new URL('./assets/arrow.obj',import.meta.url).href,model=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const size=bounds.getSize(new T.Vector3());
+    const axis=size.x>size.y&&size.x>size.z?'x':size.y>size.z?'y':'z';
+    model.position.sub(bounds.getCenter(new T.Vector3()));
+    model.traverse(part=>{if(part.isMesh)part.material=arrowMaterial;});
+    arrowModel=new T.Group();
+    arrowModel.add(model);
+    arrowModel.scale.setScalar(1.1/size[axis]);
+    if(axis==='x')arrowModel.rotation.y=-Math.PI/2;
+    if(axis==='y')arrowModel.rotation.x=Math.PI/2;
+  });
+  const sparkGeometry=new T.SphereGeometry(1,10,8);
+  const sparkMaterial=new T.MeshBasicMaterial({color:0xffc25c});
+  const fireGlow=new T.SpriteMaterial({map:glowTexture,color:0xff7021,blending:T.AdditiveBlending,depthWrite:false});
+  const emberMaterial=new T.MeshBasicMaterial({color:0xff7233});
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
     const g=new T.Group(), c=colors[m.k];
@@ -1201,7 +1452,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         if(previous)scene.remove(previous);
         actors.set(m,makeActor(m));
       }
-      const g=actors.get(m), target=road[m.seg];
+      const g=actors.get(m), target=pos(...(m.route??path)[m.seg]);
       const legs=g.userData.legs;
       if(legs){
         const last=g.userData.lastStep;
@@ -1246,6 +1497,22 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
+    forestEyes.forEach((material,i)=>{
+      const phase=(now+i*1130)%(3700+i*870);
+      material.opacity=phase<110||phase>270&&phase<385?0:.92;
+    });
+    if(cathedralPortal){
+      cathedralPortal.visible ||= mobs.some(m=>m.k===0);
+      cathedralPortal.children.slice(1).forEach((ring,i)=>{
+        ring.rotation.z=now*(i%2?.002:-.0014)+i*2;
+      });
+    }
+    cathedralBats.forEach(({prop,mixer,center},i)=>{
+      const angle=now*.0012+i*2.1;
+      prop.position.set(center.x+4*Math.cos(angle),4.2+.55*Math.sin(angle*2+i),4.7*Math.sin(angle));
+      prop.rotation.y=Math.atan2(-4*Math.sin(angle),4.7*Math.cos(angle));
+      mixer.setTime(now*.001+i*.13);
+    });
     const portalPulse=.5+.5*Math.sin(now*.003);
     vortex.uniforms.time.value=now*.001;
     portalLight.intensity=3+portalPulse*3;
@@ -1267,13 +1534,21 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const [x,y]=pads[g.userData.i];
         return x===shot.x&&y===shot.y;
       });
-      if(!spot?.userData.figure) continue;
+      if(!spot||(!spot.userData.figure&&shot.kind!==1))continue;
       spot.userData.castAt=now;
       spot.userData.aim=Math.atan2(shot.a-shot.x,shot.b-shot.y);
     }
     for(const spot of spots){
       const {figure,aim,castAt,i}=spot.userData;
       if(!figure){
+        if(alchemistModel&&spot.userData.model===alchemistModel){
+          const model=spot.children[2];
+          const facing=now-(castAt??-1000)<450&&aim!==undefined
+            ? aim
+            : Math.atan2(camera.position.x-spot.position.x,camera.position.z-spot.position.z);
+          const turn=facing-model.rotation.y;
+          model.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.45;
+        }
         if(spot.userData.model===gargoyleModel&&gargoyleModel){
           spot.children[2].rotation.y=Math.atan2(camera.position.x-spot.position.x,camera.position.z-spot.position.z);
         }
@@ -1288,8 +1563,6 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const turn=facing+Math.PI-figure.rotation.y;
       figure.rotation.y+=Math.atan2(Math.sin(turn),Math.cos(turn))*.35;
       const pull=elapsed<.16 ? .17*Math.exp(-elapsed*30) : 0;
-      figure.userData.bowString.setZ(1,.16+pull);
-      figure.userData.bowString.needsUpdate=true;
       for(const part of figure.userData.armMeshes){
         part.morphTargetInfluences[1]=pull/.17;
       }
@@ -1340,16 +1613,57 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         spark.material.opacity=1-t;
       });
     }
-    for(const [s,b] of beams)if(!visible.has(s)){
-      scene.remove(b);b.geometry.dispose();b.material.dispose();beams.delete(s);
+    for(const [shot,effect] of beams)if(!visible.has(shot)){
+      scene.remove(effect);
+      if(effect.isLineSegments){
+        effect.geometry.dispose();
+        effect.material.dispose();
+      }
+      beams.delete(shot);
     }
-    for(const s of shots)if(!s.grenade&&!beams.has(s)){
-      const impact=pos(s.a,s.b,1);
+    for(const shot of shots){
+      if(shot.grenade)continue;
+      const impact=pos(shot.a,shot.b,1);
       impact.y+=bridgeHeight(impact.x,impact.z);
-      const source=spots.find((_,i)=>pads[i][0]===s.x&&pads[i][1]===s.y);
-      const b=new T.Line(new T.BufferGeometry().setFromPoints([pos(s.x,s.y,2+(source?.position.y??0)),impact]),
-        new T.LineBasicMaterial({color:s.color,transparent:true,opacity:.85}));
-      scene.add(b);beams.set(s,b);
+      const source=spots.find((_,i)=>pads[i][0]===shot.x&&pads[i][1]===shot.y);
+      const origin=pos(shot.x,shot.y,1.55+(source?.position.y??0));
+      const flameOrigin=shot.kind===1?source?.getObjectByName("alchemist-flame-origin"):undefined;
+      flameOrigin?.getWorldPosition(origin);
+      let effect=beams.get(shot);
+      if(!effect){
+        if(shot.kind===0){
+          const points=[];
+          source?.traverse(part=>{
+            if(part.name==='laser-eye')points.push(part.getWorldPosition(new T.Vector3()),impact);
+          });
+          if(!points.length)points.push(origin,impact);
+          effect=new T.LineSegments(new T.BufferGeometry().setFromPoints(points),
+            new T.LineBasicMaterial({color:0xff385d,transparent:true}));
+        }else{
+          effect=new T.Group();
+          if(shot.kind===2){
+            if(arrowModel)effect.add(arrowModel.clone(true));
+            const flame=new T.Sprite(fireGlow);
+            flame.position.z=.54;
+            flame.scale.set(.74,.56,1);
+            effect.add(flame);
+          }
+          if(shot.kind===1){
+            mesh(effect,sparkGeometry,0xffc25c,0,0,0,.17,.17,.17,true).material=sparkMaterial;
+            for(let i=1;i<=5;i++){
+              const size=.12-i*.017;
+              mesh(effect,sparkGeometry,0xff7233,0,0,-i*.15,size,size,size,true).material=emberMaterial;
+            }
+          }
+        }
+        scene.add(effect);
+        beams.set(shot,effect);
+      }
+      if(effect.isLineSegments)effect.material.opacity=shot.life/shot.duration;
+      else{
+        effect.position.copy(origin).lerp(impact,1-shot.life/shot.duration);
+        effect.lookAt(impact);
+      }
     }
     renderer.render(scene,camera);
   };
