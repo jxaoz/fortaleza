@@ -646,7 +646,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   glowPaint.fillStyle=glowGradient;
   glowPaint.fillRect(0,0,64,64);
   const glowTexture=new T.CanvasTexture(glowCanvas);
-  const forestEyes=[[-24,-14,1.15],[-20.7,-12.8,.85],[-17.8,-14,1.55]].map(([x,z,y])=>{
+  const forestEyes=[[-24,-14,1.15],[-20.7,-13.35,2.25],[-17.8,-14,1.55]].map(([x,z,y])=>{
     const material=new T.SpriteMaterial({map:glowTexture,color:0xff3657,transparent:true,depthWrite:false});
     for(const offset of [-.18,.18]){
       const eye=new T.Sprite(material);
@@ -1270,7 +1270,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
   const platformArrow=new T.ConeGeometry(.34,.68,5);
   platformArrow.rotateZ(Math.PI);
-  const arrowMarkerMaterial=new T.MeshBasicMaterial({color:0xff244b});
+  const arrowMarkerMaterial=new T.MeshBasicMaterial({color:0xff244b,transparent:true,opacity:.62,depthWrite:false});
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     if(!cathedralRoutes&&(i===6||i===7)){
@@ -1590,6 +1590,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const badge=new T.Sprite(levelBadges[t.level-1]);
         badge.position.y=top+.34;
         badge.scale.set(1.75,.44,1);
+        badge.visible=!positionTowerUpgrade;
         g.add(badge);
         g.userData.levelBadge=badge;
       }
@@ -1755,7 +1756,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const markerTime=performance.now()*.004;
     spots.forEach((g,i)=>{
       updateTower(g,placed[i]);
-      g.userData.mark.position.y=.87+Math.sin(markerTime+i*.38)*.15;
+      g.userData.mark.position.y =1.12+Math.sin(markerTime+i*.38)*.15;
     });
     const live=new Set(mobs);
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}

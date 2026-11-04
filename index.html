@@ -18,7 +18,7 @@ small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10
 .stat:first-child strong{color:#ff9aad}
 .blood-value{display:flex;align-items:center;justify-content:center;gap:4px}
 .blood-value svg{width:18px;height:21px}
-.crypt-meter{position:relative;display:inline-grid;justify-items:center}.crypt-values{display:none;position:absolute;top:calc(100% + 5px);white-space:nowrap;background:#291b2a;color:#fff1df;padding:4px 7px;border-radius:4px;z-index:5}.crypt-meter:hover .crypt-values,.crypt-meter:focus-within .crypt-values{display:block}
+.crypt-meter{pointer-events:auto;position:relative;display:inline-grid;justify-items:center}.crypt-values{display:none;position:absolute;top:calc(100% + 5px);white-space:nowrap;background:#291b2a;color:#fff1df;padding:4px 7px;border-radius:4px;z-index:5}.crypt-meter:hover .crypt-values,.crypt-meter:focus-within .crypt-values{display:block}
 .crypt-health{appearance:none;width:clamp(44px,9vw,100px);height:12px;align-self:center;border:1px solid #906974;border-radius:3px;background:#291b2a;overflow:hidden}
 .crypt-health::-webkit-progress-bar{background:#291b2a}
 .crypt-health::-webkit-progress-value{background:linear-gradient(#f57887,#a02448)}
@@ -67,7 +67,7 @@ button[aria-pressed=true],#go{
   .stat{min-width:33px}
   .label,small{letter-spacing:.06em;font-size:9px}
 }
-.tower-upgrade{position:fixed;z-index:4;transform:translate(-50%,-100%);min-width:30px;padding:2px 6px;line-height:1.2}
+.tower-upgrade{position:fixed;z-index:4;transform:translate(-50%,-100%);display:flex;align-items:center;gap:6px;white-space:nowrap;padding:4px 8px;font-size:12px;font-weight:700;line-height:1.2}.tower-upgrade[hidden]{display:none}.tower-upgrade:disabled{opacity:1;pointer-events:none}.tower-upgrade-arrow{color:#ff9bac;font-size:15px}
 #loading-screen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 42%,#2a1932,#0a0c17 72%)}
 #loading-screen[hidden]{display:none}
 .loading-panel{width:min(100%,360px);text-align:center;padding:24px}
@@ -209,24 +209,36 @@ const towerUpgradeButtons=pads.map((_,i)=>{
  const button=document.createElement('button');
  button.type='button';
  button.className='tower-upgrade';
- button.textContent='↑';
+ const level=document.createElement('span');
+ const arrow=document.createElement('span');
+ arrow.className='tower-upgrade-arrow';
+ arrow.textContent='↑';
+ arrow.setAttribute('aria-hidden','true');
+ button.append(level,arrow);
  button.hidden=true;
  button.onclick=()=>{
   const defense=placed[i];
   if(!done&&defense&&defense.level<3&&blood>=upgradeCost(defense))build(i,undefined,true);
  };
  document.querySelector('main').append(button);
- return button;
+ return {button,level,arrow};
 });
 function positionTowerUpgrade(i,point,rect){
- const button=towerUpgradeButtons[i],defense=placed[i];
- const visible=!done&&defense&&defense.level<3&&blood>=upgradeCost(defense)
+ const {button,level,arrow}=towerUpgradeButtons[i],defense=placed[i];
+ const visible=defense
   &&point&&Math.abs(point.x)<1&&Math.abs(point.y)<1&&Math.abs(point.z)<1;
  button.hidden=!visible;
  if(!visible)return;
  button.style.left=rect.left+(point.x+1)*rect.width/2+'px';
  button.style.top=rect.top+(1-point.y)*rect.height/2-8+'px';
- const label='Melhorar '+towers[defense.kind][0]+' por '+upgradeCost(defense)+' de sangue';
+ const canUpgrade=!done&&defense.level<3&&blood>=upgradeCost(defense);
+ const levelText='Nível '+defense.level;
+ if(level.textContent!==levelText)level.textContent=levelText;
+ button.disabled=!canUpgrade;
+ arrow.hidden=!canUpgrade;
+ const label=canUpgrade
+  ? levelText+' · Melhorar '+towers[defense.kind][0]+' por '+upgradeCost(defense)+' de sangue'
+  : levelText;
  if(button.title!==label){
   button.title=label;
   button.setAttribute('aria-label',label);
