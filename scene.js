@@ -1120,7 +1120,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         point.fromBufferAttribute(vertices,i).applyMatrix4(part.matrixWorld);
         const weight=1-T.MathUtils.smoothstep((point.y-bounds.min.y)/height,.12,.48);
         const side=point.x<center.x?-1:1;
-        forward.clone().multiplyScalar(side*weight).toArray(stride,i*3);
+        const level=(point.y-bounds.min.y)/height;
+        const lateral=Math.abs(point.x-center.x)/height;
+        const armWeight=T.MathUtils.smoothstep(lateral,.19,.32)*
+          T.MathUtils.smoothstep(level,.36,.53)*(1-T.MathUtils.smoothstep(level,.72,.86));
+        forward.clone().multiplyScalar(side*(weight-.55*armWeight)).toArray(stride,i*3);
         upward.clone().multiplyScalar(weight).toArray(side<0?leftLift:rightLift,i*3);
       }
       geometry.morphTargetsRelative=true;
