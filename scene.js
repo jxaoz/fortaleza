@@ -1075,7 +1075,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         g.userData.levelBadge=badge;
       }
     }
-    const badgeScale=Math.sqrt(camera.zoom);
+    const badgeScale=camera.zoom ** -1.25;
     g.userData.levelBadge?.scale.set(1.75*badgeScale,.44*badgeScale,1);
     mark.visible=!t;
     disc.visible=!customModel||t.jam>0;
@@ -1143,7 +1143,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
         g.userData.healthBar=bar;
       }
       const healthStep=Math.ceil(20*T.MathUtils.clamp(m.health/m.maxHealth,0,1));
-      const badgeScale=Math.sqrt(camera.zoom);
+      const badgeScale=camera.zoom ** -1.25;
       g.userData.healthBar.scale.set(1.55*badgeScale,.39*badgeScale,1);
       g.userData.healthBar.material=healthBadges[healthStep];
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
