@@ -1430,6 +1430,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
               if(part.morphTargetInfluences) figure.userData.armMeshes.push(part);
             });
           }
+        }else if(t.kind===3){
+          mesh(g,cylinder,0x221628,0,.13,0,.94,.26,.94);
+          mesh(g,new T.CylinderGeometry(.38,.76,1.66,8),0x64152c,0,.98,.2,1,1,1);
+          mesh(g,ball,0x241a2a,0,1.32,-.06,.8,1.13,.49);
+          mesh(g,ball,0xd1b3bd,0,2,-.11,.39,.51,.37);
+          mesh(g,ball,0x322133,0,2.17,-.05,.4,.27,.4);
+          mesh(g,cylinder,0x38243b,.58,1.14,-.16,.075,2.2,.075);
+          mesh(g,ball,0xf02e53,.58,2.32,-.16,.23,.31,.23,true);
         }else{
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
@@ -1787,6 +1795,10 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       impact.y+=bridgeHeight(impact.x,impact.z);
       const source=spots.find((_,i)=>pads[i][0]===shot.x&&pads[i][1]===shot.y);
       const origin=pos(shot.x,shot.y,1.55+(source?.position.y??0));
+      if(shot.kind===3){
+        origin.y=.05;
+        impact.y=.05;
+      }
       const flameOrigin=shot.kind===1?source?.getObjectByName("alchemist-flame-origin"):undefined;
       flameOrigin?.getWorldPosition(origin);
       let effect=beams.get(shot);
@@ -1801,6 +1813,15 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             new T.LineBasicMaterial({color:0xff385d,transparent:true}));
         }else{
           effect=new T.Group();
+          if(shot.kind===3){
+            mesh(effect,ball,0x9f1732,0,.56,0,.46,.64,.37,true);
+            mesh(effect,ball,0xf64c68,0,.98,.08,.32,.31,.32,true);
+            for(const side of [-1,1]){
+              mesh(effect,ball,0xb91c3e,side*.27,.61,.1,.16,.5,.16,true);
+              const leg=mesh(effect,ball,0x8d122d,side*.14,.23,0,.18,.43,.18,true);
+              (effect.userData.legs??=[]).push(leg);
+            }
+          }
           if(shot.kind===2){
             if(arrowModel)effect.add(arrowModel.clone(true));
             const flame=new T.Sprite(fireGlow);
@@ -1822,7 +1843,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       if(effect.isLineSegments)effect.material.opacity=shot.life/shot.duration;
       else{
         effect.position.copy(origin).lerp(impact,1-shot.life/shot.duration);
-        effect.lookAt(impact);
+        if(shot.kind===3){
+          effect.rotation.y=Math.atan2(impact.x-origin.x,impact.z-origin.z);
+          effect.userData.legs.forEach((leg,i)=>{
+            leg.rotation.x=Math.sin((shot.duration-shot.life)*27+i*Math.PI)*.85;
+          });
+          effect.position.y+=Math.abs(Math.sin((shot.duration-shot.life)*27))*.07;
+        }else effect.lookAt(impact);
       }
     }
     renderer.render(scene,camera);

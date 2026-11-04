@@ -182,6 +182,7 @@ if(phaseParams.get('god')==='1'){
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
 const pads=cathedral?cathedralPads:[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337],[606,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
+if(cathedral)towers.push(['Drácula',105,155,1.85,39,'#e82b55']);
 const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Bruxa',510,31,50,'#f269a5']];
 const waves=cathedral?cathedralWaves:[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let selectedDefense;
@@ -296,6 +297,17 @@ function tick(dt){
  }
  if(!hp){done=true;active=false;refresh();$('defeat-wave').textContent='A fortaleza caiu na onda '+wave+'.';$('game-over').showModal();return}
  mobs=mobs.filter(m=>!m.escaped);
+ for(const shot of shots){
+  if(!shot.target)continue;
+  const target=shot.target;
+  if(target.escaped||target.health<=0){shot.life=0;continue}
+  shot.a=target.x;
+  shot.b=target.y;
+  if(shot.life<=dt){
+   const shield=mobs.some(w=>w!==target&&w.k===3&&w.health>0&&Math.hypot(target.x-w.x,target.y-w.y)<105);
+   target.health-=shot.damage*(shield?.52:1);
+  }
+ }
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;
   const [, ,range,delay,damage,color]=towers[t.kind],[x,y]=pads[i];
@@ -303,6 +315,11 @@ function tick(dt){
   const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<effectiveRange).reverse();
   if(!targets.length)return;
   for(const m of (t.kind===1?targets:targets.slice(0,1))){
+   if(t.kind===3){
+    const duration=Math.max(.24,Math.hypot(m.x-x,m.y-y)/175);
+    shots.push({x,y,a:m.x,b:m.y,kind:3,target:m,duration,life:duration,damage:damage*(1+.55*(t.level-1))});
+    continue;
+   }
    const shield=mobs.some(w=>w!==m&&w.k===3&&w.health>0&&Math.hypot(m.x-w.x,m.y-w.y)<105);
    m.health-=damage*(1+.55*(t.level-1))*(shield?.52:1);
    if(t.kind===1)m.slow=1.65;
