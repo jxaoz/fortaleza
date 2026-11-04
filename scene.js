@@ -2030,7 +2030,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
           if(!part.isMesh)return;
           part.material=Array.isArray(part.material)?part.material.map(giantMaterial):giantMaterial(part.material);
         });
-        for(const x of [-.23,.23])mesh(g,ball,0xff572f,x,5.17,.56,.07,.07,.07,true);
+        for(const x of [-.23,.23])mesh(g,ball,0xff572f,x,5.17,.36,.048,.048,.048,true);
       }
       g.add(figure);
       g.userData.legs=[];
