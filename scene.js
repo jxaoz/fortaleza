@@ -826,6 +826,15 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       mesh(scene,box,0x493326,x-.35,.3,-1.6,.22,.6,2.4);
     }
     const crypt=pos(...cathedralRoutes[0].at(-1));
+    const groundFire=new T.LatheGeometry([
+      [0,-.46],[.20,-.44],[.32,-.26],[.27,-.05],[.17,.16],[.08,.34],[0,.49]
+    ].map(([radius,y])=>new T.Vector2(radius,y)),16);
+    const flameVertices=groundFire.attributes.position;
+    for(let i=0;i<flameVertices.count;i++){
+      const height=flameVertices.getY(i)+.46;
+      flameVertices.setX(i,flameVertices.getX(i)+.38*height*height);
+    }
+    groundFire.computeVertexNormals();
     const rear=40;
     const keepWidth=rear-crypt.x-.5;
     mesh(scene,box,stoneColor,rear-keepWidth/2,3.6,0,keepWidth,7.2,13);
@@ -843,7 +852,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-3],[35,0,-12],[35,0,12],
       [crypt.x-1,0,-5],[crypt.x-1,0,5],[crypt.x+1.5,8.6,-5.3],[crypt.x+1.5,8.6,5.3]]){
       mesh(scene,cylinder,trim,x,y+.32,z,.74,.64,.74);
-      const flame=new T.Mesh(new T.ConeGeometry(.32,.95,8),new T.MeshBasicMaterial({color:0xff6330}));
+      const flame=new T.Mesh(groundFire,new T.MeshBasicMaterial({color:0xff6330}));
       flame.position.set(x,y+.99,z);
       scene.add(flame);
       const core=new T.Mesh(new T.ConeGeometry(.17,.57,7),new T.MeshBasicMaterial({color:0xffd177}));
@@ -860,18 +869,23 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       body.rotation.y=angle;
       scene.add(body);
       mesh(body,ball,0x651324,0,.015,0,1.8,.026,2.9);
-      mesh(body,box,0x34313f,0,.24,0,.65,.39,.8);
+      mesh(body,ball,0x34313f,0,.24,-.07,.66,.4,.93);
+      mesh(body,ball,0x48404a,0,.19,.32,.52,.31,.5);
+      mesh(body,box,0x604034,0,.3,.3,.5,.11,.16);
+      mesh(body,ball,0x9b8276,0,.2,-.47,.18,.21,.28);
       mesh(body,ball,0x9b8276,0,.23,-.65,.32,.35,.35);
       for(const side of [-1,1]){
-        mesh(body,box,0x3d3844,side*.21,.16,.7,.23,.25,.79);
-        mesh(body,box,0x48404a,side*.52,.14,.04,.21,.22,.68).rotation.y=side*.56;
+        mesh(body,ball,0x3d3844,side*.21,.17,.65,.26,.28,.72).rotation.y=side*.18;
+        mesh(body,ball,0x302932,side*.28,.12,1.05,.21,.23,.65).rotation.y=side*.12;
+        mesh(body,ball,0x221c24,side*.34,.105,1.37,.25,.21,.36);
+        mesh(body,ball,0x48404a,side*.36,.17,-.21,.23,.28,.56).rotation.y=side*.53;
+        mesh(body,ball,0x3b3440,side*.55,.115,.16,.17,.21,.52).rotation.y=-side*.27;
+        mesh(body,ball,0x9b8276,side*.51,.09,.41,.16,.14,.23);
       }
     }
-    const groundFire=new T.ConeGeometry(.34,.94,8);
     const fireOrange=new T.MeshBasicMaterial({color:0xff5020});
     const fireGold=new T.MeshBasicMaterial({color:0xffbd53});
     for(const [x,z] of [[-30,-10],[-16,10],[1,-5],[15,8],[33,-9]]){
-      mesh(scene,ball,0x1e1518,x,.035,z,3.6,.04,1.9);
       const light=new T.PointLight(0xff5725,8,5);
       light.position.set(x,.72,z);
       scene.add(light);
