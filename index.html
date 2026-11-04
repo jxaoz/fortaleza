@@ -53,11 +53,14 @@ button[aria-pressed=true],#go{
 #shop button small{letter-spacing:.02em;text-transform:none;color:#ffc1b1}
 .controls{display:grid;justify-items:end;gap:6px}
 .zoom button{min-width:36px;font-size:20px;padding:0 7px}
-#msg{margin:0;max-width:40ch;text-align:right;color:#fff3df;text-shadow:0 1px 4px #000,0 1px 8px #000;font-size:12px}
+.notice-area{display:flex;justify-content:center;align-items:flex-start;min-width:0}
+#msg{margin:0;max-width:min(48ch,100%);padding:8px 15px;text-align:center;color:#fff3ea;font-size:13px;line-height:1.35;border:1px solid #a16a79;border-radius:5px;background:#2b3246 linear-gradient(#151a2c50,#101320b0);background-image:linear-gradient(#151a2c50,#101320b0),var(--button-stone);background-position:center;box-shadow:inset 0 1px #a5b3d16b,inset 0 -3px #111521a8,0 3px 9px #0009;text-shadow:0 1px 3px #080811}
+#msg:empty{display:none}
+#msg{transition:opacity .45s ease}
+#msg.is-fading{opacity:0}
 @media(max-width:610px){
   .bottom{flex-direction:column-reverse;align-items:stretch}
   .controls{grid-template-columns:auto 1fr;align-items:end;justify-items:end}
-  #msg{grid-column:1/-1}
   .panel{padding:7px 9px}
   #hud{gap:5px}
   .stat{min-width:33px}
@@ -87,13 +90,13 @@ button[aria-pressed=true],#go{
         <div class="stat"><span class="label">Onda</span><strong id="wave"></strong></div>
       </div>
     </div>
-    <div></div>
+    <div class="notice-area"><p id="msg" aria-live="polite"></p></div>
     <div class="bottom">
       <section class="panel" aria-label="Defesas"><span class="label">Defesas do clã</span><div id="shop"></div></section>
       <div class="controls">
-        <p id="msg" aria-live="polite"></p>
+
         <div class="zoom" role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
-        <div class="actions"><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
+        <div class="actions"><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
   </div>
@@ -107,10 +110,30 @@ const pads=[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
 const foes=[['Lobisomem',44,78,11,'#d1b8ff'],['Troll',180,37,24,'#91c99d'],['Caçador',82,61,17,'#ffc986'],['Feiticeiro',510,31,65,'#f269a5']];
 const waves=[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
+let selectedDefense;
 let blood,hp,wave,active,selected,placed,mobs,shots,queue,spawn,done;
-function say(s){$('msg').textContent=s}
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma posição vazia ou uma torre para melhorar.')};$('shop').append(b)});
+let noticeTimer,noticeCleanup,waitingForFirstDefense;
+function say(s,intro=false){
+ if(waitingForFirstDefense&&!intro)return;
+ const notice=$('msg');
+ clearTimeout(noticeTimer);
+ clearTimeout(noticeCleanup);
+ notice.classList.remove('is-fading');
+ notice.textContent=s;
+ if(intro)return;
+ noticeTimer=setTimeout(()=>{
+  notice.classList.add('is-fading');
+  noticeCleanup=setTimeout(()=>{notice.textContent='';},450);
+ },6000);
+}
+towers.forEach(([name,cost],i)=>{const b=document.createElement('button');const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
 function refresh(){
+ const defense=placed[selectedDefense];
+ const upgrade=$('upgrade');
+ upgrade.disabled=done||!defense||defense.level===3;
+ upgrade.textContent=defense&&defense.level<3
+  ? 'Melhorar nível · '+Math.ceil(towers[defense.kind][1]*.65*defense.level)+' sangue'
+  : 'Melhorar nível';
  $('blood').textContent=blood;
  $('health').value=hp;
  $('health').title=hp+' de 12 pontos de vida';
@@ -118,25 +141,37 @@ function refresh(){
  $('go').disabled=active||done;
  [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
 }
-function reset(){blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Arraste uma defesa para uma plataforma livre ou selecione e clique no mapa. Torres já construídas podem subir até o nível 3.')}
-function build(i,droppedKind){
- const kind=droppedKind??selected;
+function reset(){waitingForFirstDefense=true;selectedDefense=undefined;blood=155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say('Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
+function build(i,droppedKind,upgrade=false){
  if(done)return;
- const t=placed[i];
- if(t&&droppedKind!==undefined){say('Arraste a defesa para uma plataforma livre.');return;}
- const cost=t?Math.ceil(towers[t.kind][1]*.65*t.level):towers[kind][1];
- if(t?.level===3)return say('Esta torre já está no nível máximo.');
+ const kind=droppedKind??selected;
+ const current=placed[i];
+ if(current&&!upgrade&&(droppedKind===undefined||kind===current.kind)){
+  selectedDefense=i;
+  say(current.level===3?'Esta defesa já está no nível máximo.':'Defesa selecionada. Use Melhorar nível para evoluí-la.');
+  refresh();
+  return;
+ }
+ const cost=upgrade?Math.ceil(towers[current.kind][1]*.65*current.level):towers[kind][1];
  if(blood<cost)return say('Você precisa de '+cost+' de sangue.');
  blood-=cost;
- if(t)t.level++;else placed[i]={kind,level:1,cool:0,jam:0};
- say(t?'Torre melhorada.':'Defesa construída.');refresh();
+ if(upgrade)current.level++;
+ else placed[i]={kind,level:1,cool:current?.cool??0,jam:current?.jam??0};
+ selectedDefense=i;
+ waitingForFirstDefense=false;
+ say(upgrade?'Defesa melhorada.':current?'Defesa substituída.':'Defesa construída.');
+ refresh();
 }
+$('upgrade').onclick=()=>{
+ const defense=placed[selectedDefense];
+ if(defense&&defense.level<3)build(selectedDefense,undefined,true);
+};
 $('reset').onclick=reset;
 $('go').onclick=()=>{if(active||done)return;queue=[...waves[wave++]];spawn=0;active=true;refresh();say('A onda '+wave+' chegou.')};
 function tick(dt){
  if(done||!active)return;
  spawn-=dt;
- if(queue.length&&spawn<=0){const k=queue.shift();mobs.push({k,x:0,y:310,seg:1,health:foes[k][1],slow:0,flash:false});spawn=.95}
+ if(queue.length&&spawn<=0){const k=queue.shift();mobs.push({k,x:0,y:310,seg:1,health:foes[k][1],maxHealth:foes[k][1],slow:0,flash:false});spawn=.95}
  for(const m of mobs){
   m.slow-=dt;const [x,y]=path[m.seg],d=Math.hypot(x-m.x,y-m.y);
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;

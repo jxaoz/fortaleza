@@ -519,13 +519,24 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   windowArch.quadraticCurveTo(-.44,1.36,-.44,.91);
   windowArch.closePath();
   const windowGeometry=new T.ShapeGeometry(windowArch);
+  const stainedGlass=new T.TextureLoader().load(new URL('./assets/vitral.png', import.meta.url).href);
+  stainedGlass.colorSpace=T.SRGBColorSpace;
+  const paneGeometry=windowGeometry.clone();
+  const paneUv=paneGeometry.attributes.uv;
+  for(let i=0;i<paneUv.count;i++) paneUv.setXY(i,(paneUv.getX(i)+.44)/.88,paneUv.getY(i)/1.72);
+  const paneMaterial=new T.MeshStandardMaterial({
+    map:stainedGlass,emissiveMap:stainedGlass,emissive:0xffffff,emissiveIntensity:.45,roughness:.42
+  });
   function victorianWindow(x,y,z,rotation){
     const frame=new T.Group();
     frame.position.set(x,y,z);
     frame.rotation.y=rotation;
     scene.add(frame);
     mesh(frame,windowGeometry,0x9b8590,0,0,0,1,1,1);
-    mesh(frame,windowGeometry,0x68213e,0,.1,.025,.76,.85,1,true);
+    const pane=new T.Mesh(paneGeometry,paneMaterial);
+    pane.position.set(0,.1,.025);
+    pane.scale.set(.76,.85,1);
+    frame.add(pane);
     mesh(frame,box,0x302239,0,.67,.052,.04,1.16,.045);
     mesh(frame,box,0x302239,0,.73,.052,.66,.045,.045);
     const tracery=mesh(frame,box,0xc08293,0,1.15,.061,.13,.13,.035);
@@ -990,12 +1001,40 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
   ]),12,.033,5,false);
   const bowMaterial=new T.MeshStandardMaterial({color:0x634333,roughness:.83});
   const bowStringMaterial=new T.LineBasicMaterial({color:0xdbcbb7});
+  function badgeMaterial(draw){
+    const tile=document.createElement('canvas');
+    tile.width=128;
+    tile.height=32;
+    draw(tile.getContext('2d'));
+    const map=new T.CanvasTexture(tile);
+    map.colorSpace=T.SRGBColorSpace;
+    return new T.SpriteMaterial({map,transparent:true,depthWrite:false});
+  }
+  const levelBadges=[1,2,3].map(level=>badgeMaterial(ctx=>{
+    ctx.fillStyle='#211728';
+    ctx.fillRect(13,1,102,30);
+    ctx.strokeStyle='#bd697d';
+    ctx.strokeRect(14,2,100,28);
+    ctx.fillStyle='#fff0de';
+    ctx.font='bold 19px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('NÍVEL '+level,64,23);
+  }));
+  const healthBadges=Array.from({length:21},(_,i)=>badgeMaterial(ctx=>{
+    ctx.fillStyle='#191321';
+    ctx.fillRect(1,5,126,22);
+    ctx.strokeStyle='#dcb2bc';
+    ctx.strokeRect(2,6,124,20);
+    ctx.fillStyle=i<=6?'#ed7a58':'#d94468';
+    ctx.fillRect(5,9,118*i/20,14);
+  }));
   function updateTower(g,t){
     const {disc,mark}=g.userData;
     const customModel = [gargoyleModel,alchemistModel,sniperModel][t?.kind];
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
       g.userData.figure=undefined;
+      g.userData.levelBadge=undefined;
       g.userData.model=customModel;
       g.userData.level=t?.level??0;g.userData.kind=t?.kind;
       if(t){
@@ -1027,8 +1066,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
           mesh(g,t.kind===0?ball:cylinder,c,0,h+.42,0,.66,.75,.66,t.kind===1);
           if(t.kind!==1)mesh(g,box,c,.54,h+.38,0,1.65,.26,.28);
         }
+        g.updateWorldMatrix(true,true);
+        const top=new T.Box3().setFromObject(g).max.y-g.position.y;
+        const badge=new T.Sprite(levelBadges[t.level-1]);
+        badge.position.y=top+.34;
+        badge.scale.set(1.75,.44,1);
+        g.add(badge);
+        g.userData.levelBadge=badge;
       }
     }
+    const badgeScale=Math.sqrt(camera.zoom);
+    g.userData.levelBadge?.scale.set(1.75*badgeScale,.44*badgeScale,1);
     mark.visible=!t;
     disc.visible=!customModel||t.jam>0;
     disc.scale.y=t?.jam>0?.64:.35;
@@ -1086,6 +1134,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut) {
       const g=actors.get(m), target=road[m.seg];
       g.position.copy(pos(m.x,m.y,Math.sin(performance.now()/(m.k===1?115:65)+m.x)*.12+.1));
       g.position.y+=bridgeHeight(g.position.x,g.position.z);
+      if(!g.userData.healthBar){
+        const bar=new T.Sprite(healthBadges[20]);
+        g.updateWorldMatrix(true,true);
+        bar.position.y=new T.Box3().setFromObject(g).max.y-g.position.y+.28;
+        bar.scale.set(1.55,.39,1);
+        g.add(bar);
+        g.userData.healthBar=bar;
+      }
+      const healthStep=Math.ceil(20*T.MathUtils.clamp(m.health/m.maxHealth,0,1));
+      const badgeScale=Math.sqrt(camera.zoom);
+      g.userData.healthBar.scale.set(1.55*badgeScale,.39*badgeScale,1);
+      g.userData.healthBar.material=healthBadges[healthStep];
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
