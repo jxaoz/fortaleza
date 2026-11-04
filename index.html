@@ -170,7 +170,7 @@ import * as T from 'three';
 import {createScene} from "./scene.js?v=marble-blood-pillar";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
-import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js?v=dungeon-pads";
+import {dungeonRoutes,dungeonPads,dungeonWaves,dungeonGiantHealth} from "./dungeon.js?v=dungeon-eight-waves";
 const phaseParams=new URLSearchParams(location.search);
 const godMode=phaseParams.get('god')==='1';
 const progressKey='fortaleza-rubra-unlocked-phase';
@@ -309,7 +309,7 @@ function refresh(){
  $('blood').textContent=blood;
  $('health').value=hp;
  $('crypt-values').textContent=hp+' / '+$('health').max;
- $('wave').textContent=wave+'/5';
+ $('wave').textContent=wave+'/'+waves.length;
  $('go').disabled=active||done;
  [...$('shop').children].forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.kind)===selected));
 }
@@ -363,7 +363,7 @@ $('next-phase').onclick=()=>{
 if(dungeon){
  document.querySelector('.brand small').textContent='O Subterrâneo da Cripta';
  $('map').setAttribute('aria-label','Mapa do Subterrâneo da Cripta');
- document.querySelector('#victory p').textContent='O Caldeirão de Sangue está a salvo. A Fortaleza Rubra resistiu!';
+ document.querySelector('#victory p').textContent='O Caldeirão de Sangue está a salvo. A Fortaleza Rubra resistiu às '+waves.length+' ondas!';
 }else if(cathedral){
  document.querySelector('.brand small').textContent='A Catedral Afundada';
  $('map').setAttribute('aria-label','Mapa da Catedral Afundada');
@@ -379,7 +379,9 @@ function defenseRange(kind,level,i){
 function tick(dt){
  if(done||!active)return;
  spawn-=dt;
- if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoutes[queue.length%2]:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];const maxHealth=dungeon&&k!==4?Math.round(foes[k][1]*1.12):foes[k][1];mobs.push({k,x,y,route,seg:1,health:maxHealth,maxHealth,slow:0,flash:false});spawn=.95;if(k===4)say("O Gigante entrou na caverna!")}
+ if(queue.length&&spawn<=0){const k=queue.shift();const route=dungeon?dungeonRoutes[queue.length%2]:cathedral?cathedralRoutes[queue.length%2]:path;const [x,y]=route[0];const maxHealth=dungeon
+  ? (k===4?dungeonGiantHealth[wave-5]:Math.round(foes[k][1]*1.12))
+  : foes[k][1];mobs.push({k,x,y,route,seg:1,health:maxHealth,maxHealth,slow:0,flash:false});spawn=.95;if(k===4)say("O Gigante entrou na caverna!")}
  for(const m of mobs){
   m.slow-=dt;const [x,y]=m.route[m.seg],d=Math.hypot(x-m.x,y-m.y);
   const speed=foes[m.k][2]*(m.slow>0?.54:1)*(m.k===0&&m.seg>=5?1.5:1)*dt;
@@ -446,7 +448,7 @@ function tick(dt){
   t.cool=delay;
  });
  mobs=mobs.filter(m=>{if(m.health>0)return true;blood+=foes[m.k][3];refresh();return false});
- if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();if(done){unlockNextPhase();$('victory').showModal();}else say('Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
+ if(!mobs.length&&!queue.length){active=false;done=wave===waves.length;if(!done)blood+=24;refresh();if(done){unlockNextPhase();$('victory').showModal();}else say('Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
 }
 const loadingManager=new T.LoadingManager();
 const progress=$('loading-progress');
