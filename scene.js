@@ -1053,6 +1053,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     }
   }
   let cauldronBlood,cauldronAura,cauldronLight;
+  const cauldronMist=[];
   if(dungeonRoute){
     mesh(scene,box,0x84674f,0,-.66,0,82,1.28,37);
     const rock=new T.DodecahedronGeometry(1);
@@ -1172,6 +1173,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       blending:T.AdditiveBlending,depthWrite:false}));
     cauldronAura.position.y=2.8;
     cauldron.add(cauldronAura);
+    for(let i=0;i<9;i++){
+      const plume=new T.Sprite(new T.SpriteMaterial({
+        map:glowTexture,color:0xb65c78,transparent:true,opacity:0,depthWrite:false
+      }));
+      cauldron.add(plume);
+      cauldronMist.push(plume);
+    }
     cauldronLight=new T.PointLight(0xff194e,40,13);
     cauldronLight.position.y=3.3;
     cauldron.add(cauldronLight);
@@ -2111,6 +2119,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       cauldronBlood.position.y=2.13+.055*pulse;
       cauldronAura.scale.setScalar(5.3+pulse*.8);
       cauldronLight.intensity=38+pulse*14;
+      cauldronMist.forEach((plume,i)=>{
+        const age=(now*.00024+i/cauldronMist.length)%1;
+        const angle=i*2.4+age*1.2;
+        const drift=.28+age*1.7;
+        plume.position.set(Math.cos(angle)*drift,2.22+age*3.8,Math.sin(angle)*drift);
+        plume.scale.set(1.15+age*2.8,.65+age*1.55,1);
+        plume.material.opacity=.23*Math.sin(age*Math.PI);
+      });
     }
     const portalPulse=.5+.5*Math.sin(now*.003);
     vortex.uniforms.time.value=now*.001;
