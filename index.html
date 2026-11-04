@@ -13,9 +13,14 @@ canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-acti
 .audio-controls{position:fixed;right:clamp(8px,2vw,24px);top:55%;transform:translateY(-50%);display:grid;gap:6px;z-index:5;pointer-events:auto}
 .audio-controls button{width:36px;height:36px;padding:0;font-size:19px}
 .audio-controls button[aria-pressed="false"]{opacity:.65;text-decoration:line-through}
-#feedback-link{margin-top:8px;pointer-events:auto}
-#feedback-link{display:inline-block;padding:6px 8px;border:1px solid #a36b76;border-radius:4px;background:#281c2b;color:#fff0de;font-size:12px;text-decoration:none}
+#feedback-link{display:grid;place-items:center;width:36px;height:36px;box-sizing:border-box;border:1px solid #a36b76;border-radius:4px;background:#281c2b;color:#fff0de;font-size:20px;text-decoration:none}
 #feedback-link:is(:hover,:focus-visible){background:#4b283d}
+#feedback-tip,.audio-controls button::after{position:absolute;right:calc(100% + 10px);padding:7px 9px;border:1px solid #a36b76;border-radius:4px;background:#281c2b;color:#fff0de;font-size:12px}
+#feedback-tip{top:0;width:150px;pointer-events:none}
+#feedback-tip::after{content:"";position:absolute;right:-5px;top:13px;width:8px;height:8px;background:#281c2b;border-top:1px solid #a36b76;border-right:1px solid #a36b76;transform:rotate(45deg)}
+.audio-controls button{position:relative}
+.audio-controls button::after{content:attr(data-tooltip);top:50%;transform:translateY(-50%);white-space:nowrap;visibility:hidden;pointer-events:none}
+.audio-controls button:is(:hover,:focus-visible)::after{visibility:visible}
 h1{margin:2px 0 0} .brand svg{display:block;width:clamp(120px,24vw,240px);height:auto}
 small,.label{color:#e8b78c;text-transform:uppercase;font-weight:700;font-size:10px;letter-spacing:.16em}
 #hud{display:flex;gap:clamp(8px,2vw,26px);text-align:center}
@@ -133,7 +138,7 @@ button[aria-pressed=true],#go{
   <text x="87" y="74" fill="#ef778a" font-family="Georgia,serif" font-size="34" font-weight="bold" letter-spacing="6">RUBRA</text>
   <path d="M237 63h77m-67 5h56" fill="none" stroke="#936b6e"/>
   <path d="m324 63-5-4-5 4 5 4Z" fill="#c2546c"/>
-</svg></h1> <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfzUxlAxVvw-gzMkvPa-pd_vz-19hXnJAYOWxm1pObks9PieA/viewform" target="_blank" rel="noopener noreferrer">Bugs e sugestões</a></header>
+</svg></h1></header>
       <div id="hud" class="panel" aria-label="Estado da partida">
         <div class="stat"><span class="label">Sangue</span><div class="blood-value"><svg viewBox="0 0 24 28" aria-hidden="true"><path d="M8 3h8M12 3v4m0 15v4h5" fill="none" stroke="#db9da8" stroke-width="2" stroke-linecap="round"/><rect x="5" y="7" width="14" height="16" rx="3" fill="#542639" stroke="#db9da8"/><path d="M6 13h12v7a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2Z" fill="#cb3758"/><path d="M9 10h6" stroke="#ffe0dd" stroke-linecap="round"/></svg><strong id="blood"></strong></div></div>
         <div class="stat"><span class="label">Cripta</span><span class="crypt-meter"><progress id="health" class="crypt-health" max="12" value="12" tabindex="0" aria-label="Vida da Cripta"></progress><span id="crypt-values" class="crypt-values" aria-hidden="true">12 / 12</span></span></div>
@@ -151,8 +156,10 @@ button[aria-pressed=true],#go{
     </div>
   </div>
   <div class="audio-controls" role="group" aria-label="Áudio">
-    <button id="music-toggle" type="button" aria-label="Música" title="Música" aria-pressed="true">♫</button>
-    <button id="effects-toggle" type="button" aria-label="Efeitos sonoros" title="Efeitos sonoros" aria-pressed="true">🔊</button>
+     <a id="feedback-link" href="https://docs.google.com/forms/d/e/1FAIpQLSfzUxlAxVvw-gzMkvPa-pd_vz-19hXnJAYOWxm1pObks9PieA/viewform" target="_blank" rel="noopener noreferrer" aria-label="Bugs e sugestões" title="Bugs e sugestões">⚑</a>
+    <span id="feedback-tip" hidden>Achou um bug ou tem uma sugestão? Clique na bandeira.</span>
+    <button id="music-toggle" type="button" aria-label="Música" data-tooltip="Música" aria-pressed="true">♫</button>
+    <button id="effects-toggle" type="button" aria-label="Efeitos sonoros" data-tooltip="Efeitos sonoros" aria-pressed="true">🔊</button>
   </div>
 </main>
 <dialog id="game-over" class="panel" aria-labelledby="defeat-title">
@@ -178,9 +185,8 @@ button[aria-pressed=true],#go{
 <script type="module">
 import * as T from 'three';
 import {createScene} from "./scene.js?v=marble-blood-pillar";
-import {setupAudio} from "./audio.js?v=3";
+import {setupAudio} from "./audio.js?v=4";
 const $=id=>document.getElementById(id);
-const playDefenseSound=setupAudio($('music-toggle'),$('effects-toggle'));
 const fullscreenButton=$('fullscreen');
 fullscreenButton.hidden=!document.fullscreenEnabled;
 fullscreenButton.onclick=async()=>{
@@ -212,6 +218,12 @@ const currentPhase=(requestedPhase===2||requestedPhase===3)
  &&(godMode||requestedPhase<=unlockedPhase)?requestedPhase:1;
 const cathedral=currentPhase===2;
 const dungeon=currentPhase===3;
+const playDefenseSound=setupAudio($('music-toggle'),$('effects-toggle'),currentPhase);
+function showFeedbackTip(){
+ const tip=$('feedback-tip');
+ tip.hidden=false;
+ setTimeout(()=>{tip.hidden=true;},5500);
+}
 function unlockNextPhase(){
  if(godMode||currentPhase>=3||unlockedPhase>currentPhase)return;
  unlockedPhase=currentPhase+1;
@@ -530,6 +542,8 @@ loadingManager.onLoad=async()=>{
   draw(placed,mobs,shots,0);
   document.querySelector('main').inert=false;
   $('loading-screen').hidden=true;
+  if(!cathedral&&!dungeon&&unlockedPhase===1)$('story').addEventListener('close',showFeedbackTip,{once:true});
+  else showFeedbackTip();
   if(!cathedral&&!dungeon){
    showStory('A Ponte da Cripta','Há séculos, o clã vampiro guarda a Fortaleza Rubra. Agora, lobisomens, trolls, caçadores e bruxas marcham em busca do sangue que sustenta seu poder. A ponte é a primeira linha de defesa. Use o sangue dos invasores abatidos para erguer e fortalecer suas defesas.','Defender a ponte');
   }
