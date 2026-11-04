@@ -737,7 +737,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     forest.push({x,z,height,variant:2});
   }
   loadTrees(new URL('./assets/pinheiro.glb', import.meta.url).href,2);
-  function drawStoneRoute(route){
+  function drawRoute(route,color=0x68758d){
     const points=route.map(([x,y])=>pos(x,y,.035));
     const centerline=new T.CurvePath();
     let start=points[0];
@@ -771,7 +771,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     surface.setAttribute('uv',new T.Float32BufferAttribute(uv,2));
     surface.setIndex(indices);
     surface.computeVertexNormals();
-    mesh(scene,surface,0x68758d,0,0,0,1,1,1);
+    mesh(scene,surface,color,0,0,0,1,1,1);
   }
   const cathedralFires=[];
   const cathedralBats=[];
@@ -790,7 +790,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     surfaces.set(stoneColor,[masonry,3]);
     mesh(scene,box,stoneColor,0,-.8,0,84,1.5,38);
     mesh(scene,box,stoneColor,.75,-.045,0,78.5,.12,34);
-    for(const route of cathedralRoutes)drawStoneRoute(route);
+    for(const route of cathedralRoutes)drawRoute(route);
     const puddleMaterial=new T.MeshStandardMaterial({
       color:0x395e7d,transparent:true,opacity:.56,roughness:.2,depthWrite:false
     });
@@ -1072,7 +1072,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       mesh(scene,box,0x68758d,x,2.6,z,1.4,5.2,1.4);
       for(const y of [.23,5.05])mesh(scene,box,0x58627b,x,y,z,2,.46,2);
     }
-    for(const route of dungeonRoutes)drawStoneRoute(route);
+    surfaces.set(0x5d493e,[soil]);
+    for(const route of dungeonRoutes)drawRoute(route,0x5d493e);
     const entrance=pos(...dungeonRoute[0]);
     for(let i=0;i<=10;i++){
       const angle=Math.PI*i/10;
@@ -1080,25 +1081,47 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         .6+Math.sin(angle)*3.35,entrance.z+Math.cos(angle)*2.65,1.45,1.2,1.16);
       jamb.rotation.set(i*.57,i*.3,angle);
     }
-    const moonShaftMaterial=new T.MeshBasicMaterial({color:0xdce9ff,transparent:true,
-      opacity:.065,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending});
+    for(const side of [-1,1]){
+      for(let i=0;i<5;i++){
+        const rubble=mesh(scene,rock,earthColors[i%3],entrance.x-2.3+i*.46,
+          .45+(i%3)*.57,entrance.z+side*(3.1+i*.48),1.16,1.18,1.32);
+        rubble.rotation.set(i*.51,side*i*.7,i*.27);
+      }
+    }
+    const moonShaftMaterial=new T.ShaderMaterial({
+      transparent:true,depthWrite:false,side:T.DoubleSide,blending:T.AdditiveBlending,
+      vertexShader:'varying vec2 shaftUv; void main(){shaftUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader:'varying vec2 shaftUv; void main(){float edge=1.-smoothstep(.02,.5,abs(shaftUv.x-.5)); float fade=smoothstep(0.,.38,shaftUv.y)*(1.-smoothstep(.78,1.,shaftUv.y)); gl_FragColor=vec4(.78,.86,1.,edge*edge*fade*.10);}'
+    });
+    const shaftPlane=new T.PlaneGeometry(2.8,1);
     for(const [x,z] of [[-21,-10],[5,11],[24,-9]]){
-      const shaft=new T.SpotLight(0xe6efff,340,26,.25,.85);
+      const shaft=new T.SpotLight(0xe6efff,215,26,.29,1);
       shaft.position.set(x-2,9,z);
       shaft.target.position.set(x+2,0,z*.65);
       scene.add(shaft,shaft.target);
       const direction=shaft.position.clone().sub(shaft.target.position);
-      const mist=new T.Mesh(new T.ConeGeometry(1.35,direction.length(),16,1,true),moonShaftMaterial);
-      mist.position.copy(shaft.target.position).addScaledVector(direction,.5);
-      mist.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.normalize());
-      scene.add(mist);
+      const beam=new T.Group();
+      beam.position.copy(shaft.target.position).addScaledVector(direction,.5);
+      beam.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),direction.clone().normalize());
+      for(const angle of [0,Math.PI/2]){
+        const mist=new T.Mesh(shaftPlane,moonShaftMaterial);
+        mist.scale.y=direction.length();
+        mist.rotation.y=angle;
+        beam.add(mist);
+      }
+      scene.add(beam);
     }
     const dungeonPortal=portal.clone(true);
     dungeonPortal.position.set(entrance.x-.7,1.5,entrance.z);
     scene.add(dungeonPortal);
     const end=pos(...dungeonRoute.at(-1));
     const cauldron=new T.Group();
-    cauldron.position.set(end.x+2.6,0,end.z);
+    const pedestalX=end.x+2.6;
+    const pedestal=new T.CylinderGeometry(1,1,1,8);
+    mesh(scene,pedestal,0x52413c,pedestalX,.17,end.z,2.86,.34,2.86);
+    mesh(scene,pedestal,0x3c3032,pedestalX,.51,end.z,2.48,.34,2.48);
+    mesh(scene,pedestal,0x52413c,pedestalX,.76,end.z,2.73,.16,2.73);
+    cauldron.position.set(pedestalX,.84,end.z);
     scene.add(cauldron);
     const iron=new T.MeshStandardMaterial({color:0x291c29,metalness:.62,roughness:.42,side:T.DoubleSide});
     const bowl=new T.Mesh(new T.LatheGeometry([[.82,.25],[1.47,.42],[2.12,1.26],[2.22,2.26],[2.11,2.32]]
