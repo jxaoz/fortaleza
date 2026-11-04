@@ -130,7 +130,7 @@ button[aria-pressed=true],#go{
       <div class="controls">
 
         <div class="zoom" role="group" aria-label="Zoom do mapa"><button id="zoom-out" aria-label="Diminuir zoom">−</button><button id="zoom-in" aria-label="Aumentar zoom">+</button></div>
-        <div class="actions"><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
+        <div class="actions"><button id="speed" type="button" aria-label="Velocidade 1,5 vezes" aria-pressed="false">1×</button><button id="upgrade" type="button" disabled>Melhorar nível</button><button id="reset">Recomeçar</button><button id="go">Iniciar onda</button></div>
       </div>
     </div>
   </div>
@@ -272,7 +272,13 @@ loadingManager.onProgress=(_,loaded,total)=>{
  progress.value=loaded;
 };
 let draw,last;
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}
+let gameSpeed=1;
+$('speed').onclick=()=>{
+ gameSpeed=gameSpeed===1?1.5:1;
+ $('speed').textContent=gameSpeed===1?'1×':'1,5×';
+ $('speed').setAttribute('aria-pressed',String(gameSpeed===1.5));
+};
+function frame(now){const dt=Math.min(.05,(now-last)/1000)*gameSpeed;last=now;tick(dt);draw(placed,mobs,shots,dt); shots=shots.filter(s=>(s.life-=dt)>0);requestAnimationFrame(frame)}
 loadingManager.onLoad=()=>{
  if(loadFailed)return;
  try{
