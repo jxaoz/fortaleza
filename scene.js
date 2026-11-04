@@ -7,8 +7,8 @@ import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/
 import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
 export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager, rotateLeft, rotateRight, cathedralRoutes=null, positionTowerUpgrade) {
-  const renderer = new T.WebGLRenderer({canvas, antialias:true});
-  renderer.setPixelRatio(Math.min(devicePixelRatio, 1));
+  const renderer = new T.WebGLRenderer({canvas, antialias:false});
+  renderer.setPixelRatio(Math.min(devicePixelRatio, .85));
   const scene = new T.Scene();
   const sky=document.createElement('canvas');
   sky.width=768;
@@ -888,6 +888,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       [-14,-11,1.3,2.1],[-7,4,-.8,1.6],[3,12,.4,1.4],[11,-12,-1.1,2],[21,10,.7,1.7]]){
       mesh(scene,box,0x77533d,x,.13,z,.32,.22,length).rotation.y=angle;
     }
+    const fireHaloMaterial=new T.SpriteMaterial({map:glowTexture,color:0xff4b24,
+      blending:T.AdditiveBlending,opacity:.35,depthWrite:false});
+    function fireHalo(x,y,z,size){
+      const halo=new T.Sprite(fireHaloMaterial);
+      halo.position.set(x,y,z);
+      halo.scale.set(size,size,1);
+      scene.add(halo);
+    }
     const crypt=pos(...cathedralRoutes[0].at(-1));
     const groundFire=new T.LatheGeometry([
       [0,-.46],[.20,-.44],[.32,-.26],[.27,-.05],[.17,.16],[.08,.34],[0,.49]
@@ -943,10 +951,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const core=new T.Mesh(new T.ConeGeometry(.17,.57,7),new T.MeshBasicMaterial({color:0xffd177}));
       core.position.set(x,y+.88,z+.09);
       scene.add(core);
-      const light=new T.PointLight(0xff5725,9,5.5);
-      light.position.set(x,y+1,z);
-      scene.add(light);
-      cathedralFires.push({flame,core,light});
+      fireHalo(x,y+1,z,2.3);
+      cathedralFires.push({flame,core});
     }
     for(const [x,z,angle,size] of [[-29,-8,.3,.74],[-24,3,.7,1],[-19,9,2,.6],
       [-10,2,-.4,1.15],[-4,-12,1.2,.69],[7,10,1.4,1],[12,-5,.1,.67],
@@ -994,24 +1000,6 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       const edge=z-1.65;
       mesh(scene,box,stoneColor,entranceX,facadeHeight/2,(wallStart+edge)/2,1.05,facadeHeight,edge-wallStart);
       mesh(scene,box,stoneColor,entranceX,6.2,z,1.05,4.2,3.3);
-      for(const side of [-1,1]){
-        mesh(scene,box,trim,entranceX+.45,2,z+side*1.65,.68,4,.42);
-      }
-      mesh(scene,box,trim,entranceX+.45,4,z,.68,.4,3.7);
-      for(const side of [-1,1]){
-        const columnZ=z+side*1.97;
-        mesh(scene,box,stoneColor,entranceX+.68,1.95,columnZ,.72,3.9,.48);
-        for(const y of [.25,3.7]){
-          mesh(scene,box,trim,entranceX+.68,y,columnZ,.86,.26,.65);
-        }
-      }
-      for(let i=0;i<=10;i++){
-        const angle=i*Math.PI/10;
-        const voussoir=mesh(scene,box,stoneColor,entranceX+.65,
-          2.95+1.42*Math.sin(angle),z+1.87*Math.cos(angle),.64,.38,.52);
-        voussoir.rotation.x=-angle;
-      }
-      mesh(scene,box,trim,entranceX+.79,4.48,z,.55,.48,.48).rotation.x=Math.PI/4;
       const doorwayPortal=portal.clone();
       doorwayPortal.position.set(entranceX+.48,1.94,z);
       doorwayPortal.scale.set(1.66,1.98,1);
@@ -1060,9 +1048,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             const flame=prop.position.clone();
             flame.y+=height;
             mesh(scene,ball,0xff3559,flame.x,flame.y,flame.z,.1,.18,.1,true);
-            const light=new T.PointLight(0xff254b,7,5);
-            light.position.copy(flame);
-            scene.add(light);
+            fireHalo(flame.x,flame.y,flame.z,1.45);
           }
         }
       });
@@ -1282,6 +1268,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     fitted.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
     sniperModel.add(fitted);
   }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
+  const platformArrow=new T.ConeGeometry(.34,.68,5);
+  platformArrow.rotateZ(Math.PI);
+  const arrowMarkerMaterial=new T.MeshBasicMaterial({color:0xff244b});
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     if(!cathedralRoutes&&(i===6||i===7)){
@@ -1296,7 +1285,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     }
     scene.add(g);g.position.copy(p);
     const disc=mesh(g,cylinder,0x829bb7,0,.14,0,1.65,.35,1.65);
-    const mark=mesh(g,cylinder,0xd2eeff,0,.34,0,1.25,.08,1.25,true);
+    const mark=new T.Mesh(platformArrow,arrowMarkerMaterial);
+    mark.position.y=.85;
+    g.add(mark);
     g.userData={i,disc,mark,level:0};return g;
   });
   const platformTextures=new T.TextureLoader(loadingManager);
@@ -1331,8 +1322,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         platform.rotation.y=i*1.63;
         spot.add(platform);
         spot.userData.rock=platform;
-        spot.userData.mark.position.y=.23;
-        spot.userData.mark.scale.set(.72,.035,.72);
+
       });
     }finally{loadingManager.itemEnd(rockUrl);}
   },undefined,error=>{
@@ -1762,7 +1752,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       renderer.setSize(width,height,false);
       camera.aspect=width/height;camera.updateProjectionMatrix();
     }
-    spots.forEach((g,i)=>updateTower(g,placed[i]));
+    const markerTime=performance.now()*.004;
+    spots.forEach((g,i)=>{
+      updateTower(g,placed[i]);
+      g.userData.mark.position.y=.87+Math.sin(markerTime+i*.38)*.15;
+    });
     const live=new Set(mobs);
     for(const [m,g] of actors)if(!live.has(m)){scene.remove(g);actors.delete(m);}
     for(const m of mobs){
