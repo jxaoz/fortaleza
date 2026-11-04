@@ -1338,7 +1338,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     model.position.sub(bounds.getCenter(new T.Vector3()));
     mount.scale.setScalar(1.05/Math.max(size.x,size.y,size.z));
     mount.add(model);
-    mount.rotation.y=Math.PI/2;
+    mount.rotation.y=-Math.PI/2;
     crossbow=mount;
   });
   function badgeMaterial(draw){
