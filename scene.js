@@ -1476,6 +1476,42 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const draculaMaps=Object.fromEntries(['head','torso','coat','boots','pants','eye']
       .map(key=>[key,colorMap('dracula-'+key)]));
     fitted('dracula',0,2.45,0,(prop,model)=>{
+      model.updateWorldMatrix(true,true);
+      const bounds=new T.Box3().setFromObject(model);
+      const center=bounds.getCenter(new T.Vector3());
+      const height=bounds.max.y-bounds.min.y;
+      const shoulderY=bounds.min.y+height*.81;
+      const axis=new T.Vector3(0,0,1);
+      const point=new T.Vector3();
+      const shoulder=new T.Vector3(),elbow=new T.Vector3();
+      model.traverse(part=>{
+        if(!part.isMesh||!part.geometry.attributes.position)return;
+        const geometry=part.geometry.clone();
+        const vertices=geometry.attributes.position;
+        const inverse=part.matrixWorld.clone().invert();
+        for(let i=0;i<vertices.count;i++){
+          point.fromBufferAttribute(vertices,i).applyMatrix4(part.matrixWorld);
+          const across=(point.x-center.x)/height;
+          const side=Math.sign(across);
+          const reach=Math.abs(across);
+          if(reach<.115||point.y<bounds.min.y+height*.63)continue;
+          const raised=side<0;
+          const weight=T.MathUtils.smoothstep(reach,.115,.19);
+          if(raised){
+            elbow.set(center.x+side*height*.29,shoulderY,center.z);
+            const bend=T.MathUtils.smoothstep(reach,.26,.34);
+            point.sub(elbow).applyAxisAngle(axis,side*1.7*bend).add(elbow);
+          }
+          shoulder.set(center.x+side*height*.14,shoulderY,center.z);
+          point.sub(shoulder).applyAxisAngle(axis,-side*(raised?.69:1.26)*weight).add(shoulder);
+          point.applyMatrix4(inverse);
+          vertices.setXYZ(i,point.x,point.y,point.z);
+        }
+        geometry.computeVertexNormals();
+        geometry.computeBoundingBox();
+        geometry.computeBoundingSphere();
+        part.geometry=geometry;
+      });
       model.traverse(part=>{
         if(!part.isMesh)return;
         const convert=material=>{
