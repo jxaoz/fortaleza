@@ -522,11 +522,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const paneMaterial=new T.MeshStandardMaterial({
     map:stainedGlass,emissiveMap:stainedGlass,emissive:0xffffff,emissiveIntensity:.45,roughness:.42
   });
-  function victorianWindow(x,y,z,rotation){
+  function victorianWindow(x,y,z,rotation,parent=bridgeScenery){
     const frame=new T.Group();
     frame.position.set(x,y,z);
     frame.rotation.y=rotation;
-    bridgeScenery.add(frame);
+    parent.add(frame);
     mesh(frame,windowGeometry,0x9b8590,0,0,0,1,1,1);
     const pane=new T.Mesh(paneGeometry,paneMaterial);
     pane.position.set(0,.1,.025);
@@ -930,6 +930,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     }
     for(const z of [-3,-1.5,0,1.5,3]){
       mesh(scene,box,cryptColor,crypt.x+.42,7.65,z,.75,.75,.82);
+    }
+    for(const z of [-2.3,0,2.3]){
+      victorianWindow(crypt.x+.48,4.55,z,-Math.PI/2,scene);
+    }
+    for(const z of [-5.3,5.3]){
+      victorianWindow(crypt.x-.07,4.95,z,-Math.PI/2,scene);
     }
     mesh(scene,box,0x721737,crypt.x+.43,1.8,0,.12,3.6,2.7,true);
     for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-11],[35,0,-12],[35,0,12],
