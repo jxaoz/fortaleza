@@ -2,6 +2,7 @@ import { STLLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/j
 import * as T from 'three';
 import { mergeGeometries } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/BufferGeometryUtils.js';
 import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/loaders/GLTFLoader.js';
+import { clone as cloneRig } from 'https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/utils/SkeletonUtils.js';
 
 export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingManager) {
   const renderer = new T.WebGLRenderer({canvas, antialias:true});
@@ -1096,6 +1097,20 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     disc.visible=!customModel||t.jam>0;
     disc.scale.y=t?.jam>0?.64:.35;
   }
+  let werewolfModel, werewolfWalk;
+  new GLTFLoader(loadingManager).load(new URL('./assets/lobisomem.glb', import.meta.url).href,({scene:model,animations})=>{
+    const bounds=new T.Box3().setFromObject(model);
+    const height=bounds.getSize(new T.Vector3()).y;
+    if(!Number.isFinite(height)||height<=0) return;
+    const center=bounds.getCenter(new T.Vector3());
+    const fitted=new T.Group();
+    model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
+    fitted.add(model);
+    fitted.scale.setScalar(2.35/height);
+    fitted.rotation.y=Math.PI;
+    werewolfWalk=animations.find(clip=>clip.name==='walk-loop');
+    werewolfModel=fitted;
+  },undefined,error=>console.warn('Falha ao carregar o Lobisomem.',error));
   let trollModel;
   new GLTFLoader(loadingManager).load(new URL('./assets/troll.glb', import.meta.url).href,({scene:model})=>{
     for(const name of ['Goblins_Sword','Goblins_Shield']){
@@ -1141,6 +1156,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   const colors=[0x9d89b7,0x628568,0xc68f61,0xdf4b88];
   function makeActor(m){
     const g=new T.Group(), c=colors[m.k];
+    if(m.k===0&&werewolfModel){
+      const model=cloneRig(werewolfModel);
+      g.add(model);
+      if(werewolfWalk){
+        const mixer=new T.AnimationMixer(model);
+        mixer.clipAction(werewolfWalk).play();
+        g.userData.walkMixer=mixer;
+      }
+      scene.add(g);
+      return g;
+    }
     if(m.k===1&&trollModel){
       g.add(trollModel.clone(true));
       g.userData.legs=[];
@@ -1190,7 +1216,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
           weights[2]=Math.max(0,-Math.sin(phase));
         }
       }
-      const bounce=m.k===1 ? -.035 : Math.sin(performance.now()/65+m.x)*.12+.1;
+      const walkMixer=g.userData.walkMixer;
+      if(walkMixer){
+        const last=g.userData.lastStep;
+        if(last){
+          const distance=Math.hypot(m.x-last.x,m.y-last.y)/13;
+          walkMixer.update(distance*werewolfWalk.duration/2.1);
+        }
+        g.userData.lastStep={x:m.x,y:m.y};
+      }
+      const bounce=(m.k===1||walkMixer) ? -.035 : Math.sin(performance.now()/65+m.x)*.12+.1;
       g.position.copy(pos(m.x,m.y,bounce));
       g.position.y+=bridgeHeight(g.position.x,g.position.z);
       if(!g.userData.healthBar){
