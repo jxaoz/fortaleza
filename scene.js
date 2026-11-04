@@ -273,6 +273,29 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     mesh(bridgeScenery,box,0x46546a,(left+right)/2,-.8,0,right-left,1.5,37);
   }
   mesh(bridgeScenery,box,0x427b94,riverX,-.85,0,4,.12,37);
+  const riverTime={value:0};
+  if(!cathedralRoutes){
+    const ripples=new T.Mesh(new T.PlaneGeometry(4,37),new T.ShaderMaterial({
+      uniforms:{time:riverTime},transparent:true,depthWrite:false,blending:T.AdditiveBlending,
+      vertexShader:'varying vec2 waterUv; void main(){waterUv=uv;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',
+      fragmentShader:[
+        'uniform float time; varying vec2 waterUv;',
+        'void main(){',
+        '  vec2 p=waterUv*vec2(4.,37.);',
+        '  float flow=p.y-time*.95;',
+        '  float a=sin(flow*8.+sin(p.x*5.+flow*.9)*1.7);',
+        '  float b=sin(flow*12.4-p.x*8.+sin(flow*.8+p.x*3.));',
+        '  float glint=pow(max(0.,a*.65+b*.35),6.);',
+        '  float bank=1.-smoothstep(.02,.12,min(waterUv.x,1.-waterUv.x));',
+        '  float foam=bank*smoothstep(.48,1.,sin(flow*5.+sin(flow*2.)));',
+        '  gl_FragColor=vec4(.31,.57,.75,glint*.21+foam*.13);',
+        '}'
+      ].join('\n')
+    }));
+    ripples.rotation.x=-Math.PI/2;
+    ripples.position.set(riverX,-.785,0);
+    bridgeScenery.add(ripples);
+  }
   function bridgeHeight(x,y){
     if(cathedralRoutes)return 0;
     if(Math.abs(y-bridgeZ)>1.65) return 0;
@@ -863,18 +886,40 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       flameVertices.setX(i,flameVertices.getX(i)+.38*height*height);
     }
     groundFire.computeVertexNormals();
+    const cryptStone=pattern('#292832',.18,(ctx,random)=>{
+      ctx.drawImage(stone.image,0,0,128,128);
+      ctx.fillStyle='#15121d69';
+      ctx.fillRect(0,0,128,128);
+      for(let i=0;i<44;i++){
+        const x=random()*128,y=random()*128;
+        ctx.fillStyle=i%3?'#17141d75':'#a0989270';
+        ctx.fillRect(x,y,1+random()*9,.7+random()*2);
+      }
+      for(let i=0;i<8;i++){
+        const x=random()*128,y=random()*128;
+        ctx.strokeStyle='#121019a0';
+        ctx.beginPath();
+        ctx.moveTo(x,y);
+        ctx.lineTo(x+3,y+5);
+        ctx.lineTo(x+1,y+9);
+        ctx.lineTo(x+6,y+15);
+        ctx.stroke();
+      }
+    });
+    const cryptColor=0x807987;
+    surfaces.set(cryptColor,[cryptStone,3]);
     const rear=40;
     const keepWidth=rear-crypt.x-.5;
-    mesh(scene,box,stoneColor,rear-keepWidth/2,3.6,0,keepWidth,7.2,13);
-    mesh(scene,box,stoneColor,rear-keepWidth/2,7.2,0,keepWidth, .55,13.5);
+    mesh(scene,box,cryptColor,rear-keepWidth/2,3.6,0,keepWidth,7.2,13);
+    mesh(scene,box,cryptColor,rear-keepWidth/2,7.2,0,keepWidth, .55,13.5);
     for(const side of [-1,1]){
-      mesh(scene,box,stoneColor,crypt.x+1.5,4.3,side*5.3,3.1,8.6,3.3);
+      mesh(scene,box,cryptColor,crypt.x+1.5,4.3,side*5.3,3.1,8.6,3.3);
       for(const dz of [-1.1,1.1]){
-        mesh(scene,box,stoneColor,crypt.x+.35,8.8,side*5.3+dz,.8,.8,.85);
+        mesh(scene,box,cryptColor,crypt.x+.35,8.8,side*5.3+dz,.8,.8,.85);
       }
     }
     for(const z of [-3,-1.5,0,1.5,3]){
-      mesh(scene,box,stoneColor,crypt.x+.42,7.65,z,.75,.75,.82);
+      mesh(scene,box,cryptColor,crypt.x+.42,7.65,z,.75,.75,.82);
     }
     mesh(scene,box,0x721737,crypt.x+.43,1.8,0,.12,3.6,2.7,true);
     for(const [x,y,z] of [[-34,0,-12],[-34,0,12],[4,0,-11],[35,0,-12],[35,0,12],
@@ -1641,7 +1686,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       wings[0].rotation.z=flap;
       wings[1].rotation.z=-flap;
     });
-    current.offset.y=-(now*.00015)%1;
+    riverTime.value=now*.001;
+    current.offset.y=-(now*.00029)%1;
     for(const shot of shots){
       if(shot.grenade||beams.has(shot)) continue;
       const spot=spots.find(g=>{
