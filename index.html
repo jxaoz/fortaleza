@@ -328,8 +328,17 @@ function tick(dt){
   if(!targets.length)return;
   for(const m of (t.kind===1?targets:targets.slice(0,1))){
    if(t.kind===3){
-    const duration=Math.max(.24,Math.hypot(m.x-x,m.y-y)/175);
-    shots.push({x,y,a:m.x,b:m.y,kind:3,target:m,duration,life:duration,damage:damage*(1+.55*(t.level-1))});
+    const dx=m.x-x,dy=m.y-y;
+    const distance=Math.hypot(dx,dy);
+    const duration=Math.max(.24,distance/175);
+    const offsetX=distance?-dy/distance*6:6;
+    const offsetY=distance?dx/distance*6:0;
+    for(const side of [-1,1]){
+     shots.push({
+      x:x+side*offsetX,y:y+side*offsetY,a:m.x,b:m.y,kind:3,target:m,
+      duration,life:duration,damage:damage*(1+.55*(t.level-1))/2
+     });
+    }
     continue;
    }
    const shield=mobs.some(w=>w!==m&&w.k===3&&w.health>0&&Math.hypot(m.x-w.x,m.y-w.y)<105);
