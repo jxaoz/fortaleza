@@ -1398,9 +1398,109 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     ctx.fillStyle=i<=6?'#ed7a58':'#d94468';
     ctx.fillRect(5,9,118*i/20,14);
   }));
+  let draculaModel, bloodGoblin;
+  if(cathedralRoutes){
+    const models=new T.LoadingManager();
+    models.setURLModifier(url=>{
+      const file=url.split(/[\\/]/).at(-1);
+      if(/^(ArhDoor|Door1|Door2|DoorPlanes|chandelier|wall1|Wall2)_DefaultMaterial_(BaseColor|NormalOpenGL|Roughness|Metallic)\.png$/i.test(file)){
+        return new URL('./assets/'+file.replace(/\.png$/i,'.jpg'),import.meta.url).href;
+      }
+      return url;
+    });
+    const fbx=new FBXLoader(models);
+    const asset=name=>new URL('./assets/'+name,import.meta.url).href;
+    function fitted(name,width,height,depth,ready){
+      const url=asset(name+'.fbx');
+      loadingManager.itemStart(url);
+      fbx.load(url,model=>{
+        try{
+          const bounds=new T.Box3().setFromObject(model);
+          const size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());
+          model.position.sub(center);
+          model.position.y+=size.y/2;
+          const normalized=new T.Group();
+          normalized.add(model);
+          const sideways=width&&size.z>size.x;
+          if(sideways)normalized.rotation.y=Math.PI/2;
+          const prop=new T.Group();
+          prop.add(normalized);
+          const scale=height/size.y;
+          prop.scale.set(width?width/(sideways?size.z:size.x):scale,height/size.y,
+            depth?depth/(sideways?size.x:size.z):scale);
+          ready(prop,model);
+        }finally{loadingManager.itemEnd(url);}
+      },undefined,error=>{
+        console.warn('Não foi possível carregar '+name,error);
+        loadingManager.itemEnd(url);
+      });
+    }
+    const textureLoader=new T.TextureLoader(loadingManager);
+    function colorMap(file){
+      const map=textureLoader.load(asset(file+'.jpg'));
+      map.colorSpace=T.SRGBColorSpace;
+      return map;
+    }
+    const draculaMaps=Object.fromEntries(['head','torso','coat','boots','pants','eye']
+      .map(key=>[key,colorMap('dracula-'+key)]));
+    fitted('dracula',0,2.45,0,(prop,model)=>{
+      model.traverse(part=>{
+        if(!part.isMesh)return;
+        const convert=material=>{
+          const name=(material.name+' '+part.name).toLowerCase();
+          const key=/coat/.test(name)?'coat':/boot|shoulder/.test(name)?'boots':
+            /pants/.test(name)?'pants':/torso/.test(name)?'torso':
+            /hair|brow|lash/.test(name)?null:/eye/.test(name)?'eye':'head';
+          return new T.MeshStandardMaterial({map:draculaMaps[key]??null,
+            color:key?0xffffff:0x261920,roughness:.86,side:T.DoubleSide});
+        };
+        part.material=Array.isArray(part.material)?part.material.map(convert):convert(part.material);
+      });
+      draculaModel=prop;
+    });
+    fitted('dracula-minion',0,1.05,0,(prop,model)=>{
+      const blood=new T.MeshStandardMaterial({color:0xa11532,emissive:0x5c071a,emissiveIntensity:.65});
+      model.traverse(part=>{if(part.isMesh)part.material=blood;});
+      bloodGoblin=prop;
+    });
+    fitted('cathedral-door',4.3,4.8,.65,prop=>{
+      cathedralRoutes.forEach(route=>{
+        const door=prop.clone(true);
+        const p=pos(...route[0]);
+        door.position.set(p.x+.69,0,p.z);
+        door.rotation.y=Math.PI/2;
+        scene.add(door);
+      });
+    });
+    fitted('cathedral-chandelier',0,2,0,prop=>{
+      for(const x of [-22,-2,18]){
+        const chandelier=prop.clone(true);
+        chandelier.position.set(x,5.5,0);
+        scene.add(chandelier);
+        const light=new T.PointLight(0xff994a,10,7);
+        light.position.set(x,5.4,0);
+        scene.add(light);
+      }
+    });
+    for(const [name,texture,z] of [['wall1','wall1',-1],['wall2','Wall2',1]]){
+      const map=colorMap(texture+'_DefaultMaterial_BaseColor');
+      const normalMap=textureLoader.load(asset(texture+'_DefaultMaterial_NormalOpenGL.jpg'));
+      const roughnessMap=textureLoader.load(asset(texture+'_DefaultMaterial_Roughness.jpg'));
+      const metalnessMap=textureLoader.load(asset(texture+'_DefaultMaterial_Metallic.jpg'));
+      const material=new T.MeshStandardMaterial({map,normalMap,roughnessMap,metalnessMap,metalness:.35,side:T.DoubleSide});
+      fitted('cathedral-'+name,4.7,6.8,.35,(prop,model)=>{
+        model.traverse(part=>{if(part.isMesh)part.material=material;});
+        for(let i=0;i<7;i++){
+          const panel=prop.clone(true);
+          panel.position.set(-30+i*10,0,z*15.04);
+          scene.add(panel);
+        }
+      });
+    }
+  }
   function updateTower(g,t){
     const {disc,mark}=g.userData;
-    const customModel = [gargoyleModel,alchemistModel,sniperModel][t?.kind];
+    const customModel = [gargoyleModel,alchemistModel,sniperModel,draculaModel][t?.kind];
     if(g.userData.model!==customModel||g.userData.level!==(t?.level??0)||g.userData.kind!==t?.kind){
       for(const part of g.children.slice(2))g.remove(part);
       g.userData.figure=undefined;
@@ -1411,7 +1511,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const c=towerColors[t.kind], h=1.2+.3*t.level;
         if(!customModel) mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
         if(customModel){
-          const figure=customModel.clone(true);
+          const figure=t.kind===3?cloneRig(customModel):customModel.clone(true);
           figure.position.y=.16;
           const facing=Math.atan2(camera.position.x-g.position.x,camera.position.z-g.position.z);
           figure.rotation.y=facing+(t.kind===2?Math.PI:0);
@@ -1813,7 +1913,9 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
             new T.LineBasicMaterial({color:0xff385d,transparent:true}));
         }else{
           effect=new T.Group();
-          if(shot.kind===3){
+          if(shot.kind===3&&bloodGoblin){
+            effect.add(cloneRig(bloodGoblin));
+          }else if(shot.kind===3){
             mesh(effect,ball,0x9f1732,0,.56,0,.46,.64,.37,true);
             mesh(effect,ball,0xf64c68,0,.98,.08,.32,.31,.32,true);
             for(const side of [-1,1]){
@@ -1845,7 +1947,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         effect.position.copy(origin).lerp(impact,1-shot.life/shot.duration);
         if(shot.kind===3){
           effect.rotation.y=Math.atan2(impact.x-origin.x,impact.z-origin.z);
-          effect.userData.legs.forEach((leg,i)=>{
+          effect.userData.legs?.forEach((leg,i)=>{
             leg.rotation.x=Math.sin((shot.duration-shot.life)*27+i*Math.PI)*.85;
           });
           effect.position.y+=Math.abs(Math.sin((shot.duration-shot.life)*27))*.07;
