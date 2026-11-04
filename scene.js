@@ -891,32 +891,17 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       scene.add(light);
       cathedralFires.push({flame,core,light});
     }
-    for(const [x,z,angle] of [[-24,3,.7],[-10,2,-.4],[7,10,1.4],[19,-8,2.2]]){
-      const body=new T.Group();
-      body.position.set(x,.03,z);
-      body.rotation.y=angle;
-      scene.add(body);
+    for(const [x,z,angle,size] of [[-29,-8,.3,.74],[-24,3,.7,1],[-19,9,2,.6],
+      [-10,2,-.4,1.15],[-4,-12,1.2,.69],[7,10,1.4,1],[12,-5,.1,.67],
+      [19,-8,2.2,.92],[24,8,-.4,.8],[34,10,1,.66]]){
       const bloodEdge=new T.SplineCurve(Array.from({length:17},(_,i)=>{
         const theta=i%16*Math.PI/8;
         const ripple=1+.21*Math.sin(theta*3+angle)+.14*Math.cos(theta*5-angle);
         return new T.Vector2(.94*ripple*Math.cos(theta),1.4*ripple*Math.sin(theta));
       }));
-      const pool=mesh(body,new T.ShapeGeometry(new T.Shape(bloodEdge.getPoints(64))),
-        0x651324,0,.009,0,1,1,1);
-      pool.rotation.x=-Math.PI/2;
-      mesh(body,ball,0x34313f,0,.24,-.07,.66,.4,.93);
-      mesh(body,ball,0x48404a,0,.19,.32,.52,.31,.5);
-      mesh(body,box,0x604034,0,.3,.3,.5,.11,.16);
-      mesh(body,ball,0x9b8276,0,.2,-.47,.18,.21,.28);
-      mesh(body,ball,0x9b8276,0,.23,-.65,.32,.35,.35);
-      for(const side of [-1,1]){
-        mesh(body,ball,0x3d3844,side*.21,.17,.65,.26,.28,.72).rotation.y=side*.18;
-        mesh(body,ball,0x302932,side*.28,.12,1.05,.21,.23,.65).rotation.y=side*.12;
-        mesh(body,ball,0x221c24,side*.34,.105,1.37,.25,.21,.36);
-        mesh(body,ball,0x48404a,side*.36,.17,-.21,.23,.28,.56).rotation.y=side*.53;
-        mesh(body,ball,0x3b3440,side*.55,.115,.16,.17,.21,.52).rotation.y=-side*.27;
-        mesh(body,ball,0x9b8276,side*.51,.09,.41,.16,.14,.23);
-      }
+      const pool=mesh(scene,new T.ShapeGeometry(new T.Shape(bloodEdge.getPoints(64))),
+        0x651324,x,.046,z,size,size,1);
+      pool.rotation.set(-Math.PI/2,0,angle);
     }
     const fireOrange=new T.MeshBasicMaterial({color:0xff5020});
     const fireGold=new T.MeshBasicMaterial({color:0xffbd53});
@@ -982,7 +967,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       ['gothic_archway',[[805,215]],5],
       ['candelabra',[[160,232],[300,71],[500,345],[742,115],[777,296]],1.6],
       ['tombstone',[[120,390],[210,406],[332,392],[418,374]],1.25],
-      ['coffin',[[52,56,1.1],[165,75,.8],[255,53,1.55],[539,72,-.9],[680,100,.55],[66,219,-1.4],[244,254,.95],[700,355,1.25]],1.05],
+      ['coffin',[[52,56,1.1],[176,42,.8],[255,53,1.55],[539,72,-.9],[680,100,.55],[66,219,-1.4],[244,254,.95],[700,355,1.25]],1.05],
       ['bat_flying',[[120,215],[260,215],[400,215],[540,215],[680,215]],.65],
       ['pillar',[[140,46],[370,46],[635,46],[140,402],[635,384]],4],
       ['portrait',[[300,22],[560,408]],1.7],
