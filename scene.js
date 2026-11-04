@@ -1080,6 +1080,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     if(kind===1){
       for(const name of ['Goblins_Sword','Goblins_Shield'])model.getObjectByName(name)?.removeFromParent();
     }
+    if(kind===2){
+      const weapons=[];
+      model.traverse(part=>{
+        if(part.isMesh&&part.material.name==='defaultMat5')weapons.push(part);
+      });
+      for(const weapon of weapons)weapon.removeFromParent();
+    }
     const bounds=new T.Box3().setFromObject(model);
     const center=bounds.getCenter(new T.Vector3());
     const height=bounds.getSize(new T.Vector3()).y;
@@ -1140,17 +1147,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }
   loadWalker(new URL('./assets/troll.glb', import.meta.url).href,1,2.8);
   loadWalker(new URL('./assets/lobisomem.glb', import.meta.url).href,0,2.45);
-  let hunterModel;
-  new GLTFLoader(loadingManager).load(new URL('./assets/cacador.glb', import.meta.url).href,({scene:model})=>{
-    const bounds=new T.Box3().setFromObject(model);
-    const height=bounds.getSize(new T.Vector3()).y;
-    if(!Number.isFinite(height)||height<=0)return;
-    const center=bounds.getCenter(new T.Vector3());
-    hunterModel=new T.Group();
-    model.position.sub(new T.Vector3(center.x,bounds.min.y,center.z));
-    hunterModel.add(model);
-    hunterModel.scale.setScalar(2.55/height);
-  });
+  loadWalker(new URL('./assets/cacador.glb', import.meta.url).href,2,2.55);
   const grenadeEffects=new Map();
   const shockwave=new T.RingGeometry(.78,1,40);
   const actors=new Map(), beams=new Map();
@@ -1165,11 +1162,6 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         mixer.clipAction(witchWalk).play();
         g.userData.walkMixer=mixer;
       }
-      scene.add(g);
-      return g;
-    }
-    if(m.k===2&&hunterModel){
-      g.add(hunterModel.clone(true));
       scene.add(g);
       return g;
     }
