@@ -1694,10 +1694,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         const armWeight=T.MathUtils.smoothstep(lateral,.19,.32)*
           T.MathUtils.smoothstep(level,.36,.53)*(1-T.MathUtils.smoothstep(level,.72,.86));
         if(kind===0){
-          const reach=T.MathUtils.smoothstep(lateral,.13,.26)*
-            T.MathUtils.smoothstep(level,.31,.50)*(1-T.MathUtils.smoothstep(level,.79,.9));
-          reachOffset.set(-side*height*.052,height*.115,height*.235)
-            .multiplyScalar(reach).applyMatrix3(inverseBasis);
+          const shoulderY=bounds.min.y+height*.76;
+          const armMask=T.MathUtils.smoothstep(lateral,.105,.19)*
+            T.MathUtils.smoothstep(level,.18,.38)*(1-T.MathUtils.smoothstep(level,.77,.88));
+          const angle=armMask*1.5;
+          const y=point.y-shoulderY,z=point.z-center.z;
+          const cos=Math.cos(angle),sin=Math.sin(angle);
+          reachOffset.set(0,y*(cos-1)+z*sin,z*(cos-1)-y*sin)
+            .applyMatrix3(inverseBasis);
           vertices.setXYZ(i,vertices.getX(i)+reachOffset.x,vertices.getY(i)+reachOffset.y,vertices.getZ(i)+reachOffset.z);
         }
         forward.clone().multiplyScalar(side*(weight-(kind===0?.22:.55)*armWeight)).toArray(stride,i*3);
