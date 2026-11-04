@@ -2017,6 +2017,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     scene.add(draculaModel);
     try{
       await renderer.compileAsync(scene,camera);
+      const maps=new Set();
+      draculaModel.traverse(part=>{
+        for(const material of [part.material].flat()){
+          if(material?.map)maps.add(material.map);
+        }
+      });
+      for(const map of maps)renderer.initTexture(map);
     }finally{
       scene.remove(draculaModel);
     }
