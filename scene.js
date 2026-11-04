@@ -1971,9 +1971,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         figure.scale.multiplyScalar(2.15);
         const recolored=new Map();
         function giantMaterial(original){
-          if(!original.map)return original;
           if(!recolored.has(original)){
             const material=original.clone();
+            material.transparent=false;
+            material.opacity=1;
+            material.alphaTest=0;
+            material.alphaMap=null;
+            material.depthWrite=true;
             material.onBeforeCompile=shader=>{
               const recolor=`
                 vec3 redSkin(vec3 color) {
@@ -1982,7 +1986,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
                   return mix(color,vec3(color.g*1.08,color.b*.37,color.r*.49),mask);
                 }`;
               shader.fragmentShader=recolor+shader.fragmentShader
-                .replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor.rgb=redSkin(diffuseColor.rgb);')
+                .replace('#include <map_fragment>','#include <map_fragment>\ndiffuseColor=vec4(redSkin(diffuseColor.rgb),1.0);')
                 .replace('#include <emissivemap_fragment>','#include <emissivemap_fragment>\ntotalEmissiveRadiance=redSkin(totalEmissiveRadiance);');
             };
             material.customProgramCacheKey=()=> 'giant-red-skin';
