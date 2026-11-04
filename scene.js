@@ -101,16 +101,6 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }, {passive: false});
   scene.add(new T.HemisphereLight(0xdceaff, 0x968199, cathedralRoutes ? .65 : 3.0));
   const moon = new T.DirectionalLight(0xc4dbff, cathedralRoutes ? .85 : 2.6);
-  renderer.shadowMap.enabled=true;
-  renderer.shadowMap.autoUpdate=false;
-  renderer.shadowMap.needsUpdate=true;
-  renderer.shadowMap.type=T.PCFShadowMap;
-  moon.castShadow=true;
-  moon.shadow.mapSize.set(1024,1024);
-  Object.assign(moon.shadow.camera,{left:-48,right:48,top:32,bottom:-32,near:1,far:105});
-  moon.shadow.normalBias=.065;
-  moon.shadow.bias=-.00015;
-  moon.shadow.intensity=.72;
   moon.position.set(-15, 32, -15);
   scene.add(moon);
   const pos = (x,y,h=0) => new T.Vector3((x-450)/13,h,(y-215)/13);
@@ -1635,6 +1625,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     model.updateMatrixWorld(true);
     model.traverse(part=>{
       if(!part.isMesh)return;
+      if(cathedralRoutes){
+        const materials=Array.isArray(part.material)?part.material:[part.material];
+        for(const material of materials){
+          if(material.map&&material.emissive){
+            material.emissive.set(0xffffff);
+            material.emissiveMap=material.map;
+            material.emissiveIntensity=.28;
+          }
+        }
+      }
       const geometry=part.geometry;
       const vertices=geometry.attributes.position;
       const stride=new Float32Array(vertices.count*3);
@@ -1746,7 +1746,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     scene.add(g);
     return g;
   }
-  return (placed,mobs,shots)=>{
+  const draw=(placed,mobs,shots)=>{
     const width=canvas.clientWidth, height=canvas.clientHeight;
     const pixel=renderer.getPixelRatio();
     if(canvas.width!==Math.floor(width*pixel)||canvas.height!==Math.floor(height*pixel)){
@@ -2012,4 +2012,14 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       });
     }
   };
+  draw.prepare=async()=>{
+    if(!draculaModel)return;
+    scene.add(draculaModel);
+    try{
+      await renderer.compileAsync(scene,camera);
+    }finally{
+      scene.remove(draculaModel);
+    }
+  };
+  return draw;
 }

@@ -378,10 +378,11 @@ function frame(now){
  shots=shots.filter(s=>(s.life-=dt)>0);
 }
 document.addEventListener('visibilitychange',()=>{last=performance.now()});
-loadingManager.onLoad=()=>{
+loadingManager.onLoad=async()=>{
  if(loadFailed)return;
  try{
   reset();
+  await draw.prepare();
   draw(placed,mobs,shots,0);
   document.querySelector('main').inert=false;
   $('loading-screen').hidden=true;
