@@ -1057,6 +1057,11 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     mesh(scene,box,0x84674f,0,-.66,0,82,1.28,37);
     const rock=new T.DodecahedronGeometry(1);
     const earthColors=[0x473735,0x52413c,0x3c3032];
+    const foundationColor=earthColors[2];
+    for(const side of [-1,1]){
+      mesh(scene,box,foundationColor,0,-.38,side*18.05,82.6,1.9,1.6);
+      mesh(scene,box,foundationColor,side*40.65,-.38,0,1.35,1.9,37.9);
+    }
     for(const side of [-1,1]){
       for(let i=0;i<18;i++){
         const ridge=mesh(scene,rock,earthColors[i%3],-39+i*4.6,2.1,side*(16.8+Math.sin(i)*.7),3.2,4.3+Math.sin(i)*1.2,2.55);
@@ -1075,6 +1080,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     surfaces.set(0x5d493e,[soil]);
     for(const route of dungeonRoutes)drawRoute(route,0x5d493e);
     const entrance=pos(...dungeonRoute[0]);
+    mesh(scene,box,earthColors[2],entrance.x-3.6,2.25,entrance.z,1.6,5.7,7.8);
+    for(let i=0;i<5;i++){
+      const cap=mesh(scene,rock,earthColors[i%3],entrance.x-2.2+i*.32,
+        4.25+Math.sin(i*.8)*.35,entrance.z+(i-2)*1.22,2.35,1.35,1.5);
+      cap.rotation.set(i*.39,i*.65,i*.48);
+    }
     for(let i=0;i<=10;i++){
       const angle=Math.PI*i/10;
       const jamb=mesh(scene,rock,earthColors[i%3],entrance.x-1.15,
@@ -1094,7 +1105,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       fragmentShader:'varying vec2 shaftUv; void main(){float edge=1.-smoothstep(.02,.5,abs(shaftUv.x-.5)); float fade=smoothstep(0.,.38,shaftUv.y)*(1.-smoothstep(.78,1.,shaftUv.y)); gl_FragColor=vec4(.78,.86,1.,edge*edge*fade*.10);}'
     });
     const shaftPlane=new T.PlaneGeometry(2.8,1);
-    for(const [x,z] of [[-21,-10],[5,11],[24,-9]]){
+    for(const [x,z] of [[-27,10],[-21,-10],[-7,-11],[5,11],[24,-9]]){
       const shaft=new T.SpotLight(0xe6efff,215,26,.29,1);
       shaft.position.set(x-2,9,z);
       shaft.target.position.set(x+2,0,z*.65);
