@@ -1615,7 +1615,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   });
   canvas.addEventListener('drop',event=>{
     const data=event.dataTransfer.getData(defenseType);
-    if(!/^[0-2]$/.test(data)) return;
+    if(!/^[0-4]$/.test(data)) return;
     event.preventDefault();
     const i=platformAt(event);
     if(i!==undefined) build(i,Number(data));
@@ -1813,11 +1813,12 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       for(const part of g.children.slice(2))if(part!==g.userData.rock)g.remove(part);
       g.userData.figure=undefined;
       g.userData.levelBadge=undefined;
+      g.userData.bloodOrb=undefined;
       g.userData.model=customModel;
       g.userData.level=t?.level??0;g.userData.kind=t?.kind;
       if(t){
         const c=towerColors[t.kind], h=1.2+.3*t.level;
-        if(!customModel) mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
+        if(!customModel&&t.kind!==4) mesh(g,cylinder,0x323c56,0,h/2,0,1,h,1);
         if(customModel){
           const figure=t.kind===3?cloneRig(customModel):customModel.clone(true);
           figure.position.y=.16;
@@ -1839,6 +1840,13 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
               if(part.morphTargetInfluences) figure.userData.armMeshes.push(part);
             });
           }
+        }else if(t.kind===4){
+          mesh(g,cylinder,0x282334,0,.17,0,1,.34,1);
+          mesh(g,cylinder,0x39283e,0,h/2,0,.56,h,.56);
+          mesh(g,cylinder,0x65273e,0,h,0,.87,.22,.87);
+          const orb=mesh(g,ball,0xff224e,0,h+.64,0,.62,.62,.62,true);
+          g.userData.bloodOrb=orb;
+          orb.userData.restHeight=orb.position.y;
         }else if(t.kind===3){
           mesh(g,cylinder,0x221628,0,.13,0,.94,.26,.94);
           mesh(g,new T.CylinderGeometry(.38,.76,1.66,8),0x64152c,0,.98,.2,1,1,1);
@@ -1861,6 +1869,8 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
         g.userData.levelBadge=badge;
       }
     }
+    const orb=g.userData.bloodOrb;
+    if(orb)orb.position.y=orb.userData.restHeight+Math.sin(performance.now()*.003)*.15;
     const badgeScale=1.65 * camera.zoom ** -1.07;
     g.userData.levelBadge?.scale.set(1.75*badgeScale,.44*badgeScale,1);
     mark.visible=!t;

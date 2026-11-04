@@ -167,18 +167,38 @@ button[aria-pressed=true],#go{
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js"}}</script>
 <script type="module">
 import * as T from 'three';
-import {createScene} from "./scene.js?v=giant-balance";
+import {createScene} from "./scene.js?v=blood-pillar";
 const $=id=>document.getElementById(id);
 import {cathedralRoutes,cathedralPads,cathedralWaves} from "./cathedral.js";
 import {dungeonRoutes,dungeonPads,dungeonWaves} from "./dungeon.js?v=dungeon-pads";
 const phaseParams=new URLSearchParams(location.search);
-const cathedral=phaseParams.get('fase')==='2';
-const dungeon=phaseParams.get('fase')==='3';
-if(phaseParams.get('god')==='1'){
+const godMode=phaseParams.get('god')==='1';
+const progressKey='fortaleza-rubra-unlocked-phase';
+let unlockedPhase=1;
+try{
+ const saved=Number(localStorage.getItem(progressKey));
+ if(Number.isInteger(saved)&&saved>=1&&saved<=3)unlockedPhase=saved;
+}catch{}
+const requestedPhase=Number(phaseParams.get('fase'));
+const currentPhase=(requestedPhase===2||requestedPhase===3)
+ &&(godMode||requestedPhase<=unlockedPhase)?requestedPhase:1;
+const cathedral=currentPhase===2;
+const dungeon=currentPhase===3;
+function unlockNextPhase(){
+ if(godMode||currentPhase>=3||unlockedPhase>currentPhase)return;
+ unlockedPhase=currentPhase+1;
+ try{localStorage.setItem(progressKey,String(unlockedPhase));}catch{}
+ renderPhasePicker();
+}
+function renderPhasePicker(){
+ document.querySelector('#phase-picker')?.remove();
+ if(!godMode&&unlockedPhase===1)return;
  const tools=document.createElement('nav');
- tools.setAttribute('aria-label','Modo de inspeção');
+ tools.id='phase-picker';
+ tools.setAttribute('aria-label','Fases liberadas');
  tools.style.cssText='position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:20;display:flex;gap:6px';
  for(const [phase,label] of [['1','Ponte'],['2','Catedral'],['3','Subterrâneo']]){
+  if(!godMode&&Number(phase)>unlockedPhase)continue;
   const button=document.createElement('button');
   button.textContent=label;
   button.disabled=phase===(dungeon?'3':cathedral?'2':'1');
@@ -188,12 +208,16 @@ if(phaseParams.get('god')==='1'){
   };
   tools.append(button);
  }
- document.body.append(tools);
+ document.querySelector('main').append(tools);
 }
+renderPhasePicker();
 const path=[[0,310],[165,310],[245,160],[430,160],[515,275],[700,275],[805,210]];
 const pads=dungeon?dungeonPads:cathedral?cathedralPads:[[100,247],[205,366],[286,235],[352,100],[445,245],[532,155],[606,337],[606,214],[755,328]];
 const towers=[['Gárgula',45,117,.58,14,'#b7caff'],['Alquimista',65,106,1.25,6,'#d983fa'],['Atirador',85,210,1.35,47,'#ff999e']];
 if(cathedral||dungeon)towers.push(['Drácula',105,155,1.85,39,'#e82b55']);
+const bloodPillarKind=4;
+const bloodInterval=12;
+towers[bloodPillarKind]=['Pilar de Sangue',65,0,bloodInterval,0,'#ff375e'];
 const foes=[['Lobisomem',44,78,8,'#d1b8ff'],['Troll',180,37,18,'#91c99d'],['Caçador',82,61,13,'#ffc986'],['Bruxa',510,31,50,'#f269a5'],['Gigante',2500,27,70,'#e89863']];
 const waves=dungeon?dungeonWaves:cathedral?cathedralWaves:[[0,0,0,0,0,0,0,0],[0,0,1,0,1,0,0,1],[2,0,2,1,0,2,1,0,2],[1,2,0,0,1,2,1,0,2,1],[1,2,0,3,1,0,2,1,0,0]];
 let selectedDefense;
@@ -219,7 +243,8 @@ const defenseBios=[
  'Vigia da fortaleza. Usa a besta para acertar um inimigo de longe com alto dano.',
  'Necromante do clã. Invoca dois lacaios de sangue que perseguem o mesmo alvo.'
 ];
-towers.forEach(([name,cost],i)=>{const b=document.createElement('button');b.dataset.bio=defenseBios[i];b.setAttribute('aria-description',defenseBios[i]);const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
+defenseBios[bloodPillarKind]='Gera sangue durante as ondas. Cada melhoria aumenta a produção.';
+towers.forEach(([name,cost],i)=>{const b=document.createElement('button');b.dataset.kind=i;b.dataset.bio=defenseBios[i];b.setAttribute('aria-description',defenseBios[i]);const title=document.createElement('strong');title.textContent=name;const price=document.createElement('small');price.textContent=cost+' de sangue';b.append(title,price);b.draggable=true;b.ondragstart=event=>{event.dataTransfer.setData('application/x-fortaleza-defense',String(i));event.dataTransfer.effectAllowed='copy';};b.onclick=()=>{selected=i;refresh();say('Escolha uma plataforma livre. Para melhorar, selecione uma defesa instalada e use Melhorar nível.')};$('shop').append(b)});
 function defenseDamage(kind,level){
  return towers[kind][4]*(1+.55*(level-1));
 }
@@ -263,11 +288,12 @@ function positionTowerUpgrade(i,point,rect){
  const formatDamage=value=>value.toLocaleString('pt-BR',{maximumFractionDigits:2});
  const preview=defense.level===3?'Nível máximo':[
   'Nível '+defense.level+' → '+(defense.level+1),
+  ...(defense.kind===bloodPillarKind?['Sangue a cada '+bloodInterval+' s · '+(defense.level+2)+' → '+(defense.level+3)]:[
   'Dano por '+(defense.kind===3?'invocação':'acerto')+' · '+
    formatDamage(defenseDamage(defense.kind,defense.level))+' → '+
    formatDamage(defenseDamage(defense.kind,defense.level+1)),
   'Alcance · '+formatDamage(defenseRange(defense.kind,defense.level,i))+' → '+
-   formatDamage(defenseRange(defense.kind,defense.level+1,i)),
+   formatDamage(defenseRange(defense.kind,defense.level+1,i))]),
   'Custo · '+upgradeCost(defense)+' de sangue'
  ].join('\n');
  if(button.dataset.preview!==preview)button.dataset.preview=preview;
@@ -285,12 +311,13 @@ function refresh(){
  $('crypt-values').textContent=hp+' / '+$('health').max;
  $('wave').textContent=wave+'/5';
  $('go').disabled=active||done;
- [...$('shop').children].forEach((b,i)=>b.setAttribute('aria-pressed',i===selected));
+ [...$('shop').children].forEach(b=>b.setAttribute('aria-pressed',Number(b.dataset.kind)===selected));
 }
 function reset(){if($('victory').open)$('victory').close();if($('game-over').open)$('game-over').close();waitingForFirstDefense=true;selectedDefense=undefined;blood=dungeon?200:155;hp=12;wave=0;active=false;selected=0;placed=[];mobs=[];shots=[];queue=[];spawn=0;done=false;refresh();say(dungeon?'Proteja o Caldeirão de Sangue. O destino da Fortaleza Rubra depende dele.':cathedral?'A ponte ainda é nossa. Mas o sino está tocando lá dentro. Posicione uma defesa para proteger a reserva de sangue.':'Arraste uma defesa para construir ou substituir. Selecione uma defesa instalada e use Melhorar nível. Torres já construídas podem subir até o nível 3.',true)}
 function build(i,droppedKind,upgrade=false){
  if(done)return;
  const kind=droppedKind??selected;
+ if(!towers[kind])return;
  const current=placed[i];
  if(current&&!upgrade&&(droppedKind===undefined||kind===current.kind)){
   selectedDefense=i;
@@ -302,7 +329,7 @@ function build(i,droppedKind,upgrade=false){
  if(blood<cost)return say('Você precisa de '+cost+' de sangue.');
  blood-=cost;
  if(upgrade)current.level++;
- else placed[i]={kind,level:1,cool:current?.cool??0,jam:current?.jam??0};
+ else placed[i]={kind,level:1,cool:kind===bloodPillarKind?bloodInterval:current?.kind===bloodPillarKind?0:current?.cool??0,jam:current?.jam??0};
  selectedDefense=i;
  waitingForFirstDefense=false;
  say(upgrade?'Defesa melhorada.':current?'Defesa substituída.':'Defesa construída.');
@@ -328,9 +355,9 @@ $('story').addEventListener('cancel',event=>event.preventDefault());
 $('next-phase').onclick=()=>{
  $('victory').close();
  if(cathedral){
-  showStory('O sangue desperta','O sino se calou, mas o chão da Catedral treme. Sob a cripta, o Caldeirão de Sangue desperta, atraindo a última horda. Drácula desce com o clã para impedir que os invasores cheguem à fonte do seu poder.','Descer ao Subterrâneo',()=>location.search='?fase=3');
+  showStory('O sangue desperta','O sino se calou, mas o chão da Catedral treme. Sob a cripta, o Caldeirão de Sangue desperta, atraindo a última horda. Drácula desce com o clã para impedir que os invasores cheguem à fonte do seu poder.','Descer ao Subterrâneo',()=>location.search=godMode?'?fase=3&god=1':'?fase=3');
  }else{
-  showStory('O sino da Catedral','A ponte resistiu. Enquanto o clã repelia o ataque, parte da horda encontrou uma passagem para a fortaleza. O sino da Catedral Afundada começa a tocar. É lá que está guardada a reserva de sangue.','Entrar na Catedral',()=>location.search='?fase=2');
+  showStory('O sino da Catedral','A ponte resistiu. Enquanto o clã repelia o ataque, parte da horda encontrou uma passagem para a fortaleza. O sino da Catedral Afundada começa a tocar. É lá que está guardada a reserva de sangue.','Entrar na Catedral',()=>location.search=godMode?'?fase=2&god=1':'?fase=2');
  }
 };
 if(dungeon){
@@ -386,6 +413,12 @@ function tick(dt){
  }
  placed.forEach((t,i)=>{
   t.cool-=dt;t.jam-=dt;if(t.cool>0||t.jam>0)return;
+  if(t.kind===bloodPillarKind){
+   blood+=t.level+2;
+   t.cool=bloodInterval;
+   refresh();
+   return;
+  }
   const [,,,delay,,color]=towers[t.kind],[x,y]=pads[i];
   const effectiveRange=defenseRange(t.kind,t.level,i);
   const targets=mobs.filter(m=>m.health>0&&Math.hypot(m.x-x,m.y-y)<effectiveRange).reverse();
@@ -413,7 +446,7 @@ function tick(dt){
   t.cool=delay;
  });
  mobs=mobs.filter(m=>{if(m.health>0)return true;blood+=foes[m.k][3];refresh();return false});
- if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();if(done)$('victory').showModal();else say('Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
+ if(!mobs.length&&!queue.length){active=false;done=wave===5;if(!done)blood+=24;refresh();if(done){unlockNextPhase();$('victory').showModal();}else say('Onda repelida. Você recebeu 24 de sangue para preparar a próxima.')}
 }
 const loadingManager=new T.LoadingManager();
 const progress=$('loading-progress');
