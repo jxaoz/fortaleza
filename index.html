@@ -326,15 +326,21 @@ function positionTowerUpgrade(i,point,rect){
   ? levelText+' · Melhorar '+towers[defense.kind][0]+' por '+upgradeCost(defense)+' de sangue'
   : levelText;
  const formatDamage=value=>value.toLocaleString('pt-BR',{maximumFractionDigits:2});
- const preview=defense.level===3?'Nível máximo':[
-  'Nível '+defense.level+' → '+(defense.level+1),
-  ...(defense.kind===bloodPillarKind?['Sangue a cada '+bloodInterval+' s · '+defense.level+' → '+(defense.level+1)]:[
-  'Dano por '+(defense.kind===3?'invocação':'acerto')+' · '+
-   formatDamage(defenseDamage(defense.kind,defense.level))+' → '+
-   formatDamage(defenseDamage(defense.kind,defense.level+1)),
-  'Alcance · '+formatDamage(defenseRange(defense.kind,defense.level,i))+' → '+
-   formatDamage(defenseRange(defense.kind,defense.level+1,i))]),
-  'Custo · '+upgradeCost(defense)+' de sangue'
+ const {kind,level:currentLevel}=defense;
+ const maxLevel=currentLevel===3;
+ const stat=(name,valueAtLevel)=>name+' · '+formatDamage(valueAtLevel(currentLevel))+
+  (maxLevel?'':' → '+formatDamage(valueAtLevel(currentLevel+1)));
+ const attributes=kind===bloodPillarKind
+  ? [stat('Sangue a cada '+bloodInterval+' s',value=>value)]
+  : [
+     stat('Dano por '+(kind===3?'invocação':'acerto'),value=>defenseDamage(kind,value)),
+     stat('Alcance',value=>defenseRange(kind,value,i)),
+     'Intervalo entre ataques · '+formatDamage(towers[kind][3])+' s'
+    ];
+ const preview=[
+  maxLevel?'Nível máximo':levelText+' → '+(currentLevel+1),
+  ...attributes,
+  ...(maxLevel?[]:['Custo · '+upgradeCost(defense)+' de sangue'])
  ].join('\n');
  if(button.dataset.preview!==preview)button.dataset.preview=preview;
  if(button.getAttribute('aria-label')!==label)button.setAttribute('aria-label',label);
