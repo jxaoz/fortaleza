@@ -1083,8 +1083,16 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
     const dropGeometry=new T.SphereGeometry(1,6,5);
     const dropMaterial=new T.MeshBasicMaterial({color:0xa6d6ff,transparent:true,opacity:.72});
     const rippleGeometry=new T.RingGeometry(.84,1,16);
-    for(const [x,z,height,period] of [[-31,-14,4.4,3400],[-19,14,4.8,4800],
-      [-7,-15,4.2,3900],[7,14,4.6,5600],[21,-14,4.3,4400],[32,14,4.7,5100]]){
+    const dripPositions=[
+      [-34,-14],[-29,-12],[-24,-15],[-18,-13],[-12,-15],[-7,-13],
+      [-1,-15],[5,-13],[12,-15],[19,-13],[25,-15],[31,-13],
+      [-34,13],[-28,15],[-22,12],[-16,15],[-10,13],[-4,15],
+      [3,13],[9,15],[15,13],[22,15],[28,13],[34,15],
+      [-26,5],[-17,-6],[-9,4],[6,-4],[15,5],[23,-5]
+    ];
+    dripPositions.forEach(([x,z],index)=>{
+      const height=4.2+(index%5)*.16;
+      const period=3400+(index*691)%2400;
       const drop=new T.Mesh(dropGeometry,dropMaterial);
       drop.position.set(x,height,z);
       drop.scale.set(.055,.2,.055);
@@ -1095,7 +1103,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       ripple.rotation.x=-Math.PI/2;
       scene.add(drop,ripple);
       dungeonDrips.push({drop,ripple,height,period});
-    }
+    });
     for(const side of [-1,1]){
       mesh(scene,box,foundationColor,0,-.38,side*18.05,82.6,1.9,1.6);
       mesh(scene,box,foundationColor,side*40.65,-.38,0,1.35,1.9,37.9);
