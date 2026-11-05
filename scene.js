@@ -1074,11 +1074,28 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   let cauldronBlood,cauldronAura,cauldronLight;
   const cauldronMist=[];
   const dungeonSpiders=[];
+  const dungeonDrips=[];
   if(dungeonRoute){
     mesh(scene,box,0x84674f,0,-.66,0,82,1.28,37);
     const rock=new T.DodecahedronGeometry(1);
     const earthColors=[0x473735,0x52413c,0x3c3032];
     const foundationColor=earthColors[2];
+    const dropGeometry=new T.SphereGeometry(1,6,5);
+    const dropMaterial=new T.MeshBasicMaterial({color:0xa6d6ff,transparent:true,opacity:.72});
+    const rippleGeometry=new T.RingGeometry(.84,1,16);
+    for(const [x,z,height,period] of [[-31,-14,4.4,3400],[-19,14,4.8,4800],
+      [-7,-15,4.2,3900],[7,14,4.6,5600],[21,-14,4.3,4400],[32,14,4.7,5100]]){
+      const drop=new T.Mesh(dropGeometry,dropMaterial);
+      drop.position.set(x,height,z);
+      drop.scale.set(.055,.2,.055);
+      const ripple=new T.Mesh(rippleGeometry,new T.MeshBasicMaterial({
+        color:0xa6d6ff,transparent:true,depthWrite:false
+      }));
+      ripple.position.set(x,.015,z);
+      ripple.rotation.x=-Math.PI/2;
+      scene.add(drop,ripple);
+      dungeonDrips.push({drop,ripple,height,period});
+    }
     for(const side of [-1,1]){
       mesh(scene,box,foundationColor,0,-.38,side*18.05,82.6,1.9,1.6);
       mesh(scene,box,foundationColor,side*40.65,-.38,0,1.35,1.9,37.9);
@@ -2173,6 +2190,18 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
       if(target)g.rotation.y=Math.atan2(target.x-g.position.x,target.z-g.position.z);
     }
     const now=performance.now();
+    dungeonDrips.forEach(({drop,ripple,height,period},i)=>{
+      const elapsed=(now+i*730)%period;
+      const fallTime=920;
+      drop.visible=elapsed<fallTime;
+      if(drop.visible)drop.position.y=height*(1-(elapsed/fallTime)**2);
+      const splash=(elapsed-fallTime)/420;
+      ripple.visible=splash>=0&&splash<1;
+      if(ripple.visible){
+        ripple.scale.setScalar(.08+splash*.32);
+        ripple.material.opacity=.5*(1-splash);
+      }
+    });
     forestEyes.forEach((material,i)=>{
       const phase=(now+i*1130)%(3700+i*870);
       material.opacity=phase<110||phase>270&&phase<385?0:.92;
