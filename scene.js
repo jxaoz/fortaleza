@@ -1498,7 +1498,7 @@ export function createScene(canvas, path, pads, build, zoomIn, zoomOut, loadingM
   }, undefined, error => console.warn('Falha ao carregar o modelo do Atirador.', error));
   const platformArrow=new T.ConeGeometry(.34,.68,5);
   platformArrow.rotateZ(Math.PI);
-  const arrowMarkerMaterial=new T.MeshBasicMaterial({color:0xff244b,transparent:true,opacity:.62,depthWrite:false});
+  const arrowMarkerMaterial=new T.MeshBasicMaterial({color:cathedralRoutes?0x56baff:0xff244b,transparent:true,opacity:.62,depthWrite:false});
   const spots=pads.map(([x,y],i)=>{
     const p=pos(x,y), g=new T.Group();
     if(!cathedralRoutes&&!dungeonRoute&&(i===6||i===7)){
